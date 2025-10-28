@@ -1,0 +1,20 @@
+<?php
+
+// config for Hwkdo/IntranetAppmsgraph
+return [
+    'roles' => [
+        'admin' => [
+            'name' => 'App-Msgraph-Admin',
+            'permissions' => [
+                'see-app-msgraph',
+                'manage-app-msgraph',
+            ],
+        ],
+        'user' => [
+            'name' => 'App-Msgraph-Benutzer',
+            'permissions' => [
+                'see-app-msgraph',
+            ],
+        ],
+    ],
+];
