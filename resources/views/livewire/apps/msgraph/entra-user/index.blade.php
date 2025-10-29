@@ -2,6 +2,7 @@
 
 use Flux\Flux;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphUserServiceInterface;
+use Hwkdo\HwkAdminLaravel\HwkAdminService;
 use Illuminate\Support\Facades\Auth;
 
 use function Livewire\Volt\{mount, state, title, updated};
@@ -152,6 +153,68 @@ $activateUser = function () {
         Flux::toast(
             heading: 'Fehler',
             text: 'Der Benutzer konnte nicht aktiviert werden.',
+            variant: 'danger'
+        );
+    }
+};
+
+$resetPassword = function () {
+    if (! $this->selectedUser) {
+        return;
+    }
+
+    $hwkAdminService = app(HwkAdminService::class);
+    $currentUser = Auth::user();
+    $upn = $this->selectedUser['upn'];
+    $mailEmpfaenger = $currentUser->email;
+
+    $success = $hwkAdminService->resetEntraUserPassword($upn, $mailEmpfaenger);
+
+    if ($success) {
+        Flux::toast(
+            heading: 'Passwort-Reset erfolgreich',
+            text: 'Das Passwort wurde erfolgreich zurückgesetzt und wird per Mail an Sie gesendet.',
+            variant: 'success'
+        );
+    } else {
+        Flux::toast(
+            heading: 'Fehler',
+            text: 'Das Passwort konnte nicht zurückgesetzt werden.',
+            variant: 'danger'
+        );
+    }
+};
+
+$removeFromGroup = function ($groupId) {
+    if (! $this->selectedUser) {
+        return;
+    }
+
+    $userService = app(MsGraphUserServiceInterface::class);
+    $success = $userService->removeUserFromGroup($this->selectedUser['upn'], $groupId);
+
+    if ($success) {
+        // Aktualisiere die Gruppenliste
+        $details = $userService->getUserDetails($this->selectedUser['upn']);
+        
+        if ($details && $details->user) {
+            $this->selectedUser['groups'] = $details->groups 
+                ? array_map(fn($g) => [
+                    'displayName' => $g->getDisplayName() ?? $g->getId(),
+                    'id' => $g->getId()
+                ], $details->groups) 
+                : [];
+        }
+
+        Flux::toast(
+            heading: 'Erfolg',
+            text: 'User wurde aus der Gruppe entfernt.',
+            variant: 'success'
+        );
+    } else {
+        Flux::toast(
+            heading: 'Fehler',
+            text: 'Fehler beim Entfernen des Users aus der Gruppe.',
             variant: 'danger'
         );
     }
@@ -329,8 +392,16 @@ $activateUser = function () {
                         <flux:heading size="md" class="mb-4">Gruppen ({{ count($selectedUser['groups']) }})</flux:heading>
                         <div class="max-h-64 space-y-2 overflow-y-auto">
                             @forelse($selectedUser['groups'] as $group)
-                                <div class="rounded border p-2">
+                                <div class="flex items-center justify-between rounded border p-2">
                                     <flux:text class="text-sm">{{ $group['displayName'] }}</flux:text>
+                                    <flux:button 
+                                        size="xs" 
+                                        wire:confirm="Möchten Sie den User wirklich aus dieser Gruppe entfernen?"
+                                        wire:click="removeFromGroup('{{ $group['id'] }}')" 
+                                        variant="danger"
+                                    >
+                                        <flux:icon name="trash" />
+                                    </flux:button>
                                 </div>
                             @empty
                                 <flux:text class="text-zinc-400">Keine Gruppen</flux:text>
@@ -355,7 +426,14 @@ $activateUser = function () {
                 @endif
             </div>
 
-            <div class="flex justify-end gap-2">
+            <div class="flex justify-between gap-2">
+                <flux:button 
+                    wire:click="resetPassword" 
+                    variant="danger"
+                    icon="key"
+                >
+                    Passwort Reset
+                </flux:button>
                 <flux:button variant="ghost" x-on:click="$flux.modal('user-details-modal').close()">
                     Schließen
                 </flux:button>
