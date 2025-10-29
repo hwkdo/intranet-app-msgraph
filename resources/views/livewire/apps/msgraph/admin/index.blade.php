@@ -220,41 +220,41 @@ $showMappingDetails = function ($id) {
                             
                             <div class="md:col-span-2">
                                 <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Job Class</flux:text>
-                                <flux:text class="break-words font-mono text-sm">{{ $selectedMapping->job_class }}</flux:text>
+                                <flux:text class="break-all font-mono text-sm">{{ $selectedMapping->job_class }}</flux:text>
                             </div>
                             
                             @if($selectedMapping->description)
                                 <div class="md:col-span-2">
                                     <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Description</flux:text>
-                                    <flux:text class="break-words">{{ $selectedMapping->description }}</flux:text>
+                                    <flux:text class="break-all">{{ $selectedMapping->description }}</flux:text>
                                 </div>
                             @endif
                             
                             @if($selectedMapping->filepath)
                             <div class="md:col-span-2">
                                 <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Filepath</flux:text>
-                                <flux:text class="break-words font-mono text-sm">{{ $selectedMapping->filepath }}</flux:text>
+                                <flux:text class="break-all font-mono text-sm">{{ $selectedMapping->filepath }}</flux:text>
                             </div>
                             @endif
                             
                             @if($selectedMapping->upn)
                                 <div class="md:col-span-2">
                                     <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">UPN</flux:text>
-                                    <flux:text class="break-words">{{ $selectedMapping->upn }}</flux:text>
+                                    <flux:text class="break-all">{{ $selectedMapping->upn }}</flux:text>
                                 </div>
                             @endif
                             
                             @if($selectedMapping->resource)
                                 <div class="md:col-span-2">
                                     <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Resource</flux:text>
-                                    <flux:text class="break-words">{{ $selectedMapping->resource }}</flux:text>
+                                    <flux:text class="break-all">{{ $selectedMapping->resource }}</flux:text>
                                 </div>
                             @endif
                             
                             @if($selectedMapping->notification_url)
                                 <div class="md:col-span-2">
                                     <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Notification URL</flux:text>
-                                    <flux:text class="break-words">{{ $selectedMapping->notification_url }}</flux:text>
+                                    <flux:text class="break-all">{{ $selectedMapping->notification_url }}</flux:text>
                                 </div>
                             @endif
                             

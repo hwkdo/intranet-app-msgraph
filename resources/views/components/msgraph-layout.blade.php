@@ -7,7 +7,7 @@
 @php
     $defaultNavItems = [
         ['label' => 'Übersicht', 'href' => route('apps.msgraph.index'), 'icon' => 'home', 'description' => 'Zurück zur Übersicht', 'buttonText' => 'Übersicht anzeigen'],
-        ['label' => 'Beispielseite', 'href' => route('apps.msgraph.example'), 'icon' => 'document-text', 'description' => 'Beispielseite anzeigen', 'buttonText' => 'Beispielseite öffnen'],
+        ['label' => 'Entra-User', 'href' => route('apps.msgraph.entra-user.index'), 'icon' => 'user', 'description' => 'Entra-User anzeigen', 'buttonText' => 'Entra-User öffnen'],
         ['label' => 'Meine Einstellungen', 'href' => route('apps.msgraph.settings.user'), 'icon' => 'cog-6-tooth', 'description' => 'Persönliche Einstellungen anpassen', 'buttonText' => 'Einstellungen öffnen'],
         ['label' => 'Admin', 'href' => route('apps.msgraph.admin.index'), 'icon' => 'shield-check', 'description' => 'Administrationsbereich verwalten', 'buttonText' => 'Admin öffnen', 'permission' => 'manage-app-msgraph']
     ];
