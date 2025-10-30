@@ -48,8 +48,12 @@ $loadUsers = function () {
         $this->search ?: null
     );
 
+    $currentUser = Auth::user();
+    $isLehrgangsverwaltungUser = $currentUser->can('manage-app-msgraph-lehrgangsverwaltung') 
+        && !$currentUser->can('manage-app-msgraph');
+
     // Konvertiere MS Graph User-Objekte in Arrays für Livewire
-    $this->users = array_map(function ($user) {
+    $users = array_map(function ($user) {
         return [
             'id' => $user->getId(),
             'userPrincipalName' => $user->getUserPrincipalName(),
@@ -59,6 +63,14 @@ $loadUsers = function () {
         ];
     }, $result['users']);
 
+    // Filtere Benutzer basierend auf Berechtigungen
+    if ($isLehrgangsverwaltungUser) {
+        $users = array_filter($users, function ($user) {
+            return str_contains($user['userPrincipalName'], '@hwkdoedu.onmicrosoft.com');
+        });
+    }
+
+    $this->users = array_values($users);
     $this->nextLink = $result['nextLink'];
     $this->loading = false;
 };
@@ -70,6 +82,10 @@ $nextPage = function () {
 
     $this->loading = true;
     $userService = app(MsGraphUserServiceInterface::class);
+
+    $currentUser = Auth::user();
+    $isLehrgangsverwaltungUser = $currentUser->can('manage-app-msgraph-lehrgangsverwaltung') 
+        && !$currentUser->can('manage-app-msgraph');
 
     // Lade die nächste Seite mit dem nextLink
     $result = $userService->getUsersPaginated(
@@ -89,7 +105,14 @@ $nextPage = function () {
         ];
     }, $result['users']);
 
-    $this->users = array_merge($this->users, $newUsers);
+    // Filtere Benutzer basierend auf Berechtigungen
+    if ($isLehrgangsverwaltungUser) {
+        $newUsers = array_filter($newUsers, function ($user) {
+            return str_contains($user['userPrincipalName'], '@hwkdoedu.onmicrosoft.com');
+        });
+    }
+
+    $this->users = array_merge($this->users, array_values($newUsers));
     $this->nextLink = $result['nextLink'];
     $this->currentPage++;
     $this->loading = false;

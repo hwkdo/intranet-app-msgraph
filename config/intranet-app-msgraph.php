@@ -16,5 +16,12 @@ return [
                 'see-app-msgraph',
             ],
         ],
+        'lehrgangsverwaltunguser' => [
+            'name' => 'App-Msgraph-Benutzer-Lehrgangsverwaltung',
+            'permissions' => [
+                'see-app-msgraph',
+                'manage-app-msgraph-lehrgangsverwaltung',
+            ],
+        ],
     ],
 ];
