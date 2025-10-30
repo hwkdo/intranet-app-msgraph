@@ -2,10 +2,11 @@
 
 use Flux\Flux;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphUserServiceInterface;
+use Hwkdo\MsGraphLaravel\Interfaces\MsGraphAuthenticationServiceInterface;
 use Hwkdo\HwkAdminLaravel\HwkAdminService;
 use Illuminate\Support\Facades\Auth;
 
-use function Livewire\Volt\{mount, state, title, updated};
+use function Livewire\Volt\{mount, state, title, updated, computed};
 
 title('Msgraph - Entra-User');
 
@@ -18,6 +19,42 @@ state([
     'selectedUser' => null,
     'loading' => false,
 ]);
+
+// Auth methods are derived for the currently selected user to keep state minimal
+$authMethods = computed(function () {
+	if (! $this->selectedUser) {
+		return [];
+	}
+
+	return app(MsGraphAuthenticationServiceInterface::class)->getMethods($this->selectedUser['upn']);
+});
+
+$getAuthMethod = function (string $type, string $methodId) {
+	if (! $this->selectedUser) {
+		return [];
+	}
+
+	return app(MsGraphAuthenticationServiceInterface::class)
+		->getMethod($this->selectedUser['upn'], $type, $methodId);
+};
+
+$deleteAuthMethod = function (string $typeWithoutHash, string $methodId) {
+	if (! $this->selectedUser) {
+		return;
+	}
+
+	$type = '#' . $typeWithoutHash; // restore leading '#'
+	app(MsGraphAuthenticationServiceInterface::class)
+		->deleteMethod($this->selectedUser['upn'], $type, $methodId);
+
+	unset($this->authMethods); // refresh computed on next render
+
+	Flux::toast(
+		heading: 'Erfolg',
+		text: 'Authentifizierungsmethode wurde gelöscht.',
+		variant: 'success'
+	);
+};
 
 mount(function () {
     // Lade usersPerPage aus den User-Settings
@@ -448,6 +485,42 @@ $removeFromGroup = function ($groupId) {
                     </flux:card>
                 @endif
             </div>
+
+			{{-- Authentifizierungsmethoden (minimalistisch) --}}
+			<flux:card>
+				<flux:heading size="md" class="mb-4">Authentifizierungsmethoden</flux:heading>
+				@if($this->authMethods && count($this->authMethods) > 0)
+					<div class="space-y-3">
+						@foreach($this->authMethods as $m)
+							<div class="space-y-2 rounded border p-2">
+								<div class="flex items-center justify-between">
+									<flux:text class="text-sm font-medium">{{ $m->getODataType() }}</flux:text>
+									@if($m->getODataType() !== '#microsoft.graph.passwordAuthenticationMethod')
+										<flux:button
+											size="xs"
+											variant="danger"
+											wire:confirm="Methode wirklich löschen?"
+											wire:click="deleteAuthMethod('{{ str_replace('#', '', $m->getODataType()) }}', '{{ $m->getId() }}')"
+										>
+											<flux:icon name="trash" />
+										</flux:button>
+									@else
+										<flux:badge color="zinc">nicht löschbar</flux:badge>
+									@endif
+								</div>
+								@php($details = $this->getAuthMethod($m->getODataType(), $m->getId()))
+								<div class="grid gap-1 md:grid-cols-2">
+									@foreach($details as $k => $v)
+										<flux:text class="text-xs text-zinc-600 dark:text-zinc-300">{{ $k }}: {{ $v }}</flux:text>
+									@endforeach
+								</div>
+							</div>
+						@endforeach
+					</div>
+				@else
+					<flux:text class="text-zinc-400">Keine Methoden</flux:text>
+				@endif
+			</flux:card>
 
             <div class="flex justify-between gap-2">
                 <flux:button 
