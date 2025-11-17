@@ -1,13 +1,19 @@
 <?php
 
-use Hwkdo\MsGraphLaravel\Models\Subscription;
-use Hwkdo\MsGraphLaravel\Models\GraphWebhookJobMapping;
-use function Livewire\Volt\{state, title, computed};
 use Flux\Flux;
+use Hwkdo\MsGraphLaravel\Models\GraphWebhookJobMapping;
+use Hwkdo\MsGraphLaravel\Models\Subscription;
+use Hwkdo\MsGraphLaravel\Services\SubscriptionService;
+use Illuminate\Support\Facades\Log;
+use function Livewire\Volt\{computed, state, title};
 
 title('Msgraph - Admin');
 
-state(['activeTab' => 'einstellungen', 'selectedMapping' => null]);
+state([
+    'activeTab' => 'einstellungen',
+    'selectedMapping' => null,
+    'subscriptionPendingDeleteId' => null,
+]);
 
 $subscriptions = computed(fn() => Subscription::orderBy('created_at', 'desc')->get());
 $mappings = computed(fn() => GraphWebhookJobMapping::orderBy('created_at', 'desc')->get());
@@ -16,6 +22,101 @@ $showMappingDetails = function ($id) {
     $this->selectedMapping = GraphWebhookJobMapping::find($id);
     Flux::modal('mapping-details-modal')->show();
 
+};
+
+$confirmSubscriptionDelete = function (int $subscriptionId) {
+    $subscription = $this->subscriptions->firstWhere('id', $subscriptionId);
+
+    if (! $subscription) {
+        Flux::toast(
+            variant: 'danger',
+            text: 'Subscription wurde nicht gefunden.'
+        );
+
+        return;
+    }
+
+    $this->subscriptionPendingDeleteId = $subscriptionId;
+    Flux::modal('subscription-delete-modal')->show();
+};
+
+$deleteSubscription = function () {
+    if (! $this->subscriptionPendingDeleteId) {
+        return;
+    }
+
+    $subscription = Subscription::find($this->subscriptionPendingDeleteId);
+
+    if (! $subscription) {
+        Flux::toast(
+            variant: 'danger',
+            text: 'Subscription ist bereits entfernt worden.'
+        );
+
+        $this->subscriptionPendingDeleteId = null;
+        Flux::modal('subscription-delete-modal')->close();
+
+        return;
+    }
+
+    try {
+        $result = app(SubscriptionService::class)->unsubscribe($subscription->graph_id);
+
+        if (! $result) {
+            Flux::toast(
+                variant: 'danger',
+                text: 'Subscription konnte nicht gefunden werden.'
+            );
+        } else {
+            Flux::toast(
+                variant: 'success',
+                text: 'Subscription wurde gelöscht.'
+            );
+        }
+    } catch (\Throwable $exception) {
+        Log::error('Msgraph Admin - Fehler beim Löschen der Subscription', [
+            'subscription_id' => $subscription->id,
+            'graph_id' => $subscription->graph_id,
+            'message' => $exception->getMessage(),
+        ]);
+
+        Flux::toast(
+            variant: 'danger',
+            text: 'Subscription konnte nicht gelöscht werden.'
+        );
+    }
+
+    $this->subscriptionPendingDeleteId = null;
+    Flux::modal('subscription-delete-modal')->close();
+    unset($this->subscriptions);
+};
+
+$checkSubscriptions = function () {
+    try {
+        $result = app(SubscriptionService::class)->checkAndSyncSubscriptions();
+
+        if ($result) {
+            Flux::toast(
+                variant: 'success',
+                text: 'Subscriptions wurden erfolgreich geprüft und synchronisiert.'
+            );
+            unset($this->subscriptions);
+        } else {
+            Flux::toast(
+                variant: 'danger',
+                text: 'Fehler beim Prüfen der Subscriptions.'
+            );
+        }
+    } catch (\Throwable $exception) {
+        Log::error('Msgraph Admin - Fehler beim Prüfen der Subscriptions', [
+            'message' => $exception->getMessage(),
+        ]);
+
+        Flux::toast(
+            variant: 'danger',
+            text: 'Subscriptions konnten nicht geprüft werden.'
+        );
+    }
 };
 
 ?>
@@ -70,7 +171,19 @@ $showMappingDetails = function ($id) {
         <flux:tab.panel name="subscriptions">
             <div style="min-height: 400px;">
                 <flux:card>
-                    <flux:heading size="lg" class="mb-4">Registered Subscriptions</flux:heading>
+                    <div class="mb-4 flex items-center justify-between">
+                        <flux:heading size="lg">Registered Subscriptions</flux:heading>
+                        <flux:button
+                            wire:click="checkSubscriptions"
+                            wire:target="checkSubscriptions"
+                            wire:loading.attr="disabled"
+                            icon="arrow-path"
+                            variant="primary"
+                        >
+                            <span wire:loading.remove wire:target="checkSubscriptions">Check Subscriptions</span>
+                            <span wire:loading wire:target="checkSubscriptions">Prüfe...</span>
+                        </flux:button>
+                    </div>
                     <flux:text class="mb-6">
                         Übersicht über alle registrierten MS Graph Subscriptions.
                     </flux:text>
@@ -91,6 +204,7 @@ $showMappingDetails = function ($id) {
                                 <flux:table.column>Expiration</flux:table.column>
                                 <flux:table.column>Created At</flux:table.column>
                                 <flux:table.column>Updated At</flux:table.column>
+                                <flux:table.column>Aktionen</flux:table.column>
                             </flux:table.columns>
                             
                             <flux:table.rows>
@@ -110,6 +224,16 @@ $showMappingDetails = function ($id) {
                                         </flux:table.cell>
                                         <flux:table.cell>
                                             {{ $subscription->updated_at?->format('d.m.Y H:i:s') ?? '-' }}
+                                        </flux:table.cell>
+                                        <flux:table.cell>
+                                            <flux:button
+                                                wire:click="confirmSubscriptionDelete({{ $subscription->id }})"
+                                                size="xs"
+                                                icon="trash"
+                                                variant="danger"
+                                            >
+                                                Löschen
+                                            </flux:button>
                                         </flux:table.cell>
                                     </flux:table.row>
                                 @endforeach
@@ -185,6 +309,44 @@ $showMappingDetails = function ($id) {
         </flux:tab.panel>
     </flux:tab.group>    
 </x-intranet-app-msgraph::msgraph-layout>
+
+<flux:modal name="subscription-delete-modal" class="max-w-lg">
+    @php
+        $subscriptionPendingDelete = $this->subscriptionPendingDeleteId
+            ? $this->subscriptions->firstWhere('id', $this->subscriptionPendingDeleteId)
+            : null;
+    @endphp
+
+    @if($subscriptionPendingDelete)
+        <div class="space-y-4">
+            <flux:heading size="lg">Subscription löschen</flux:heading>
+            <flux:text>
+                Möchten Sie die Subscription mit der Graph-ID
+                <span class="font-semibold">{{ $subscriptionPendingDelete->graph_id }}</span>
+                wirklich löschen? Dies entfernt auch den lokalen Datensatz.
+            </flux:text>
+
+            <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-200">
+                Dieser Vorgang kann nicht rückgängig gemacht werden.
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <flux:button variant="ghost" x-on:click="$flux.modal('subscription-delete-modal').close()">
+                    Abbrechen
+                </flux:button>
+                <flux:button
+                    variant="danger"
+                    wire:click="deleteSubscription"
+                    wire:target="deleteSubscription"
+                    wire:loading.attr="disabled"
+                >
+                    <span wire:loading.remove wire:target="deleteSubscription">Ja, löschen</span>
+                    <span wire:loading wire:target="deleteSubscription">Lösche...</span>
+                </flux:button>
+            </div>
+        </div>
+    @endif
+</flux:modal>
 
 <flux:modal name="mapping-details-modal" class="max-w-3xl">
                 @if($selectedMapping)
