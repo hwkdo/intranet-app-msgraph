@@ -202,28 +202,86 @@ $checkSubscriptions = function () {
                                 <flux:table.column>Resource</flux:table.column>
                                 <flux:table.column>Notification URL</flux:table.column>
                                 <flux:table.column>Expiration</flux:table.column>
-                                <flux:table.column>Created At</flux:table.column>
-                                <flux:table.column>Updated At</flux:table.column>
                                 <flux:table.column>Aktionen</flux:table.column>
                             </flux:table.columns>
                             
                             <flux:table.rows>
                                 @foreach($this->subscriptions as $subscription)
+                                    @php
+                                        // Resource: Teilstring zwischen den letzten beiden "/"
+                                        $resourceParts = explode('/', trim($subscription->resource, '/'));
+                                        $resourceDisplay = count($resourceParts) >= 2 
+                                            ? $resourceParts[count($resourceParts) - 2] 
+                                            : $subscription->resource;
+                                        
+                                        // Notification URL: Teilstring nach dem letzten "/"
+                                        $notificationDisplay = basename($subscription->notificationUrl);
+                                        
+                                        // Expiration: Berechne verbleibende Zeit
+                                        $expirationBadge = null;
+                                        $expirationDateTime = null;
+                                        if ($subscription->expiration) {
+                                            $now = now();
+                                            $expirationDateTime = $subscription->expiration->format('d.m.Y H:i:s');
+                                            if ($subscription->expiration->isPast()) {
+                                                $expirationBadge = ['text' => 'Abgelaufen', 'color' => 'red'];
+                                            } else {
+                                                $diffInHours = round($now->diffInRealHours($subscription->expiration, false), 2);
+                                                if ($diffInHours < 24) {
+                                                    $expirationBadge = ['text' => number_format($diffInHours, 2, ',', '.') . ' Stunden', 'color' => 'amber'];
+                                                } else {
+                                                    $expirationBadge = ['text' => number_format($diffInHours, 2, ',', '.') . ' Stunden', 'color' => 'green'];
+                                                }
+                                            }
+                                        }
+                                    @endphp
                                     <flux:table.row>
                                         <flux:table.cell>{{ $subscription->id }}</flux:table.cell>
-                                        <flux:table.cell>{{ $subscription->graph_id }}</flux:table.cell>
-                                        <flux:table.cell>{{ $subscription->resource }}</flux:table.cell>
-                                        <flux:table.cell class="max-w-xs truncate" title="{{ $subscription->notificationUrl }}">
-                                            {{ $subscription->notificationUrl }}
+                                        <flux:table.cell>
+                                            <flux:dropdown hover>
+                                                <button type="button" class="inline-flex">
+                                                    <flux:icon.information-circle class="size-5 text-zinc-500 cursor-help" />
+                                                </button>
+                                                <flux:popover class="rounded-xl shadow-xl p-3">
+                                                    <flux:text class="font-mono text-sm">{{ $subscription->graph_id }}</flux:text>
+                                                </flux:popover>
+                                            </flux:dropdown>
                                         </flux:table.cell>
                                         <flux:table.cell>
-                                            {{ $subscription->expiration?->format('d.m.Y H:i:s') ?? '-' }}
+                                            <flux:dropdown hover>
+                                                <button type="button" class="inline-flex">
+                                                    <flux:badge size="sm">{{ $resourceDisplay }}</flux:badge>
+                                                </button>
+                                                <flux:popover class="rounded-xl shadow-xl p-3">
+                                                    <flux:text class="font-mono text-sm break-all">{{ $subscription->resource }}</flux:text>
+                                                </flux:popover>
+                                            </flux:dropdown>
                                         </flux:table.cell>
                                         <flux:table.cell>
-                                            {{ $subscription->created_at?->format('d.m.Y H:i:s') ?? '-' }}
+                                            <flux:dropdown hover>
+                                                <button type="button" class="inline-flex">
+                                                    <flux:badge size="sm">{{ $notificationDisplay }}</flux:badge>
+                                                </button>
+                                                <flux:popover class="rounded-xl shadow-xl p-3">
+                                                    <flux:text class="font-mono text-sm break-all">{{ $subscription->notificationUrl }}</flux:text>
+                                                </flux:popover>
+                                            </flux:dropdown>
                                         </flux:table.cell>
                                         <flux:table.cell>
-                                            {{ $subscription->updated_at?->format('d.m.Y H:i:s') ?? '-' }}
+                                            @if($expirationBadge)
+                                                <flux:dropdown hover>
+                                                    <button type="button" class="inline-flex">
+                                                        <flux:badge size="sm" color="{{ $expirationBadge['color'] }}">
+                                                            {{ $expirationBadge['text'] }}
+                                                        </flux:badge>
+                                                    </button>
+                                                    <flux:popover class="rounded-xl shadow-xl p-3">
+                                                        <flux:text class="font-mono text-sm">{{ $expirationDateTime }}</flux:text>
+                                                    </flux:popover>
+                                                </flux:dropdown>
+                                            @else
+                                                -
+                                            @endif
                                         </flux:table.cell>
                                         <flux:table.cell>
                                             <flux:button
