@@ -41,4 +41,9 @@ class IntranetAppMsgraph implements IntranetAppInterface
     {
         return \Hwkdo\IntranetAppMsgraph\Data\AppSettings::class;
     }
+
+    public static function mcpServers(): array
+    {
+        return [];
+    }
 }
