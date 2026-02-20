@@ -283,6 +283,7 @@ $removeFromGroup = function ($groupId) {
 ?>
 <div>
 <x-intranet-app-msgraph::msgraph-layout heading="Msgraph App" subheading="Entra-User">
+    <flux:card class="glass-card">
     <div class="space-y-6">
         <div class="flex items-center justify-between gap-4">
             <flux:input
@@ -305,7 +306,7 @@ $removeFromGroup = function ($groupId) {
 
         @if($loading)
             <div class="flex items-center justify-center py-12">
-                <flux:icon.arrow-path class="size-8 animate-spin text-zinc-400" />
+                <flux:icon.arrow-path class="size-8 animate-spin text-[#073070]/40 dark:text-white/40" />
             </div>
         @else
             <flux:table>
@@ -336,7 +337,7 @@ $removeFromGroup = function ($groupId) {
                         </flux:table.row>
                     @empty
                         <flux:table.row>
-                            <flux:table.cell colspan="5" class="text-center text-zinc-400">
+                            <flux:table.cell colspan="5" class="text-center text-slate-400 dark:text-white/40">
                                 @if($search)
                                     Keine Benutzer gefunden für "{{ $search }}"
                                 @else
@@ -349,7 +350,7 @@ $removeFromGroup = function ($groupId) {
             </flux:table>
 
             <div class="flex items-center justify-between">
-                <div class="text-sm text-zinc-600 dark:text-zinc-400">
+                <div class="text-sm text-[#073070]/70 dark:text-white/60">
                     {{ $usersPerPage }} Benutzer pro Seite
                 </div>
                 <div class="flex gap-2">
@@ -365,6 +366,7 @@ $removeFromGroup = function ($groupId) {
             </div>
         @endif
     </div>
+    </flux:card>
 </x-intranet-app-msgraph::msgraph-layout>
 
 <flux:modal name="user-details-modal" class="max-w-4xl">
@@ -373,39 +375,39 @@ $removeFromGroup = function ($groupId) {
             <flux:heading size="lg">Benutzer-Details: {{ $selectedUser['displayName'] }}</flux:heading>
 
             <div class="grid gap-6 md:grid-cols-2">
-                <flux:card>
+                <flux:card class="glass-card">
                     <flux:heading size="md" class="mb-4">Basis-Informationen</flux:heading>
                     <div class="space-y-3">
                         <div>
-                            <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">UPN</flux:text>
+                            <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">UPN</flux:text>
                             <flux:text>{{ $selectedUser['upn'] }}</flux:text>
                         </div>
                         <div>
-                            <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Anzeigename</flux:text>
+                            <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Anzeigename</flux:text>
                             <flux:text>{{ $selectedUser['displayName'] }}</flux:text>
                         </div>
                         <div>
-                            <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">E-Mail</flux:text>
+                            <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">E-Mail</flux:text>
                             <flux:text>{{ $selectedUser['mail'] ?? '-' }}</flux:text>
                         </div>
                         <div>
-                            <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Jobtitel</flux:text>
+                            <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Jobtitel</flux:text>
                             <flux:text>{{ $selectedUser['jobTitle'] ?? '-' }}</flux:text>
                         </div>
                         <div>
-                            <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Abteilung</flux:text>
+                            <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Abteilung</flux:text>
                             <flux:text>{{ $selectedUser['department'] ?? '-' }}</flux:text>
                         </div>
                         <div>
-                            <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Mobiltelefon</flux:text>
+                            <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Mobiltelefon</flux:text>
                             <flux:text>{{ $selectedUser['mobilePhone'] ?? '-' }}</flux:text>
                         </div>
                         <div>
-                            <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Bürostandort</flux:text>
+                            <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Bürostandort</flux:text>
                             <flux:text>{{ $selectedUser['officeLocation'] ?? '-' }}</flux:text>
                         </div>
                         <div>
-                            <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Account aktiviert</flux:text>
+                            <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Account aktiviert</flux:text>
                             <div class="flex items-center gap-2">
                                 @if($selectedUser['accountEnabled'])
                                     <flux:badge color="green">Ja</flux:badge>
@@ -424,18 +426,18 @@ $removeFromGroup = function ($groupId) {
                     </div>
                 </flux:card>
 
-                <flux:card>
+                <flux:card class="glass-card">
                     <flux:heading size="md" class="mb-4">Zusätzliche Informationen</flux:heading>
                     <div class="space-y-3">
                         @if($selectedUser['manager'])
                             <div>
-                                <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Vorgesetzter</flux:text>
+                                <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Vorgesetzter</flux:text>
                                 <flux:text>{{ $selectedUser['manager'] }}</flux:text>
                             </div>
                         @endif
 
                         <div>
-                            <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Geschäftstelefone</flux:text>
+                            <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Geschäftstelefone</flux:text>
                             @if($selectedUser['businessPhones'] && count($selectedUser['businessPhones']) > 0)
                                 <flux:text>{{ implode(', ', $selectedUser['businessPhones']) }}</flux:text>
                             @else
@@ -448,11 +450,11 @@ $removeFromGroup = function ($groupId) {
 
             <div class="grid gap-6 md:grid-cols-2">
                 @if($selectedUser['groups'])
-                    <flux:card>
+                    <flux:card class="glass-card">
                         <flux:heading size="md" class="mb-4">Gruppen ({{ count($selectedUser['groups']) }})</flux:heading>
                         <div class="max-h-64 space-y-2 overflow-y-auto">
                             @forelse($selectedUser['groups'] as $group)
-                                <div class="flex items-center justify-between rounded border p-2">
+                                <div class="flex items-center justify-between rounded-lg border border-[#d0e3f9]/70 dark:border-white/15 bg-white/40 dark:bg-[#073070]/20 p-2">
                                     <flux:text class="text-sm">{{ $group['displayName'] }}</flux:text>
                                     <flux:button 
                                         size="xs" 
@@ -464,22 +466,22 @@ $removeFromGroup = function ($groupId) {
                                     </flux:button>
                                 </div>
                             @empty
-                                <flux:text class="text-zinc-400">Keine Gruppen</flux:text>
+                                <flux:text class="text-slate-400 dark:text-white/40">Keine Gruppen</flux:text>
                             @endforelse
                         </div>
                     </flux:card>
                 @endif
 
                 @if($selectedUser['teams'])
-                    <flux:card>
+                    <flux:card class="glass-card">
                         <flux:heading size="md" class="mb-4">Teams ({{ count($selectedUser['teams']) }})</flux:heading>
                         <div class="max-h-64 space-y-2 overflow-y-auto">
                             @forelse($selectedUser['teams'] as $team)
-                                <div class="rounded border p-2">
+                                <div class="rounded-lg border border-[#d0e3f9]/70 dark:border-white/15 bg-white/30 dark:bg-[#073070]/15 p-2">
                                     <flux:text class="text-sm">{{ $team['displayName'] }}</flux:text>
                                 </div>
                             @empty
-                                <flux:text class="text-zinc-400">Keine Teams</flux:text>
+                                <flux:text class="text-slate-400 dark:text-white/40">Keine Teams</flux:text>
                             @endforelse
                         </div>
                     </flux:card>
@@ -487,12 +489,12 @@ $removeFromGroup = function ($groupId) {
             </div>
 
 			{{-- Authentifizierungsmethoden (minimalistisch) --}}
-			<flux:card>
+			<flux:card class="glass-card">
 				<flux:heading size="md" class="mb-4">Authentifizierungsmethoden</flux:heading>
 				@if($this->authMethods && count($this->authMethods) > 0)
 					<div class="space-y-3">
 						@foreach($this->authMethods as $m)
-							<div class="space-y-2 rounded border p-2">
+							<div class="space-y-2 rounded-lg border border-[#d0e3f9]/70 dark:border-white/15 bg-white/30 dark:bg-[#073070]/15 p-2">
 								<div class="flex items-center justify-between">
 									<flux:text class="text-sm font-medium">{{ $m->getODataType() }}</flux:text>
 									@if($m->getODataType() !== '#microsoft.graph.passwordAuthenticationMethod')
@@ -511,14 +513,14 @@ $removeFromGroup = function ($groupId) {
 								@php($details = $this->getAuthMethod($m->getODataType(), $m->getId()))
 								<div class="grid gap-1 md:grid-cols-2">
 									@foreach($details as $k => $v)
-										<flux:text class="text-xs text-zinc-600 dark:text-zinc-300">{{ $k }}: {{ $v }}</flux:text>
+										<flux:text class="text-xs text-[#073070]/70 dark:text-white/60">{{ $k }}: {{ $v }}</flux:text>
 									@endforeach
 								</div>
 							</div>
 						@endforeach
 					</div>
 				@else
-					<flux:text class="text-zinc-400">Keine Methoden</flux:text>
+					<flux:text class="text-slate-400 dark:text-white/40">Keine Methoden</flux:text>
 				@endif
 			</flux:card>
 

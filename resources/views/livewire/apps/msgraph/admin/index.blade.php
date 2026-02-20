@@ -142,26 +142,26 @@ $checkSubscriptions = function () {
 
         <flux:tab.panel name="statistiken">
             <div style="min-height: 400px;">
-                <flux:card>
+                <flux:card class="glass-card">
                     <flux:heading size="lg" class="mb-4">App-Statistiken</flux:heading>
                     <flux:text class="mb-6">
                         Übersicht über die Nutzung der Msgraph App.
                     </flux:text>
                     
                     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        <div class="rounded-lg border p-4">
+                        <div class="rounded-xl border border-[#d0e3f9]/80 dark:border-white/10 bg-[#d0e3f9]/40 dark:bg-[#073070]/40 p-4">
                             <flux:heading size="md">Aktive Benutzer</flux:heading>
-                            <flux:text size="xl" class="mt-2">42</flux:text>
+                            <flux:text size="xl" class="mt-2 font-semibold text-[#073070] dark:text-white">42</flux:text>
                         </div>
                         
-                        <div class="rounded-lg border p-4">
+                        <div class="rounded-xl border border-[#d0e3f9]/80 dark:border-white/10 bg-[#d0e3f9]/40 dark:bg-[#073070]/40 p-4">
                             <flux:heading size="md">Seitenaufrufe</flux:heading>
-                            <flux:text size="xl" class="mt-2">1,234</flux:text>
+                            <flux:text size="xl" class="mt-2 font-semibold text-[#073070] dark:text-white">1,234</flux:text>
                         </div>
                         
-                        <div class="rounded-lg border p-4">
+                        <div class="rounded-xl border border-[#d0e3f9]/80 dark:border-white/10 bg-[#d0e3f9]/40 dark:bg-[#073070]/40 p-4">
                             <flux:heading size="md">Letzte Aktivität</flux:heading>
-                            <flux:text size="xl" class="mt-2">2 Min</flux:text>
+                            <flux:text size="xl" class="mt-2 font-semibold text-[#073070] dark:text-white">2 Min</flux:text>
                         </div>
                     </div>
                 </flux:card>
@@ -170,7 +170,7 @@ $checkSubscriptions = function () {
 
         <flux:tab.panel name="subscriptions">
             <div style="min-height: 400px;">
-                <flux:card>
+                <flux:card class="glass-card">
                     <div class="mb-4 flex items-center justify-between">
                         <flux:heading size="lg">Registered Subscriptions</flux:heading>
                         <flux:button
@@ -189,8 +189,8 @@ $checkSubscriptions = function () {
                     </flux:text>
                     
                     @if($this->subscriptions->isEmpty())
-                        <div class="rounded-lg border p-8 text-center">
-                            <flux:icon.bell class="mx-auto mb-4 size-12 text-zinc-400" />
+                        <div class="rounded-xl border border-dashed border-[#d0e3f9] dark:border-white/20 bg-white/30 dark:bg-[#04214e]/20 p-8 text-center">
+                            <flux:icon.bell class="mx-auto mb-4 size-12 text-[#073070]/40 dark:text-white/30" />
                             <flux:heading size="md" class="mb-2">Keine Subscriptions vorhanden</flux:heading>
                             <flux:text>Es sind derzeit keine MS Graph Subscriptions registriert.</flux:text>
                         </div>
@@ -240,7 +240,7 @@ $checkSubscriptions = function () {
                                         <flux:table.cell>
                                             <flux:dropdown hover>
                                                 <button type="button" class="inline-flex">
-                                                    <flux:icon.information-circle class="size-5 text-zinc-500 cursor-help" />
+                                                    <flux:icon.information-circle class="size-5 text-[#073070]/50 dark:text-white/40 cursor-help" />
                                                 </button>
                                                 <flux:popover class="rounded-xl shadow-xl p-3">
                                                     <flux:text class="font-mono text-sm">{{ $subscription->graph_id }}</flux:text>
@@ -304,15 +304,15 @@ $checkSubscriptions = function () {
 
         <flux:tab.panel name="mappings">
             <div style="min-height: 400px;">
-                <flux:card>
+                <flux:card class="glass-card">
                     <flux:heading size="lg" class="mb-4">Webhook Job Mappings</flux:heading>
                     <flux:text class="mb-6">
                         Übersicht über alle Webhook-zu-Job Mappings für MS Graph Webhooks.
                     </flux:text>
                     
                     @if($this->mappings->isEmpty())
-                        <div class="rounded-lg border p-8 text-center">
-                            <flux:icon.link class="mx-auto mb-4 size-12 text-zinc-400" />
+                        <div class="rounded-xl border border-dashed border-[#d0e3f9] dark:border-white/20 bg-white/30 dark:bg-[#04214e]/20 p-8 text-center">
+                            <flux:icon.link class="mx-auto mb-4 size-12 text-[#073070]/40 dark:text-white/30" />
                             <flux:heading size="md" class="mb-2">Keine Mappings vorhanden</flux:heading>
                             <flux:text>Es sind derzeit keine Webhook Job Mappings konfiguriert.</flux:text>
                         </div>
@@ -413,22 +413,22 @@ $checkSubscriptions = function () {
                         
                         <div class="grid gap-4 md:grid-cols-2">
                             <div>
-                                <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">ID</flux:text>
+                                <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">ID</flux:text>
                                 <flux:text>{{ $selectedMapping->id }}</flux:text>
                             </div>
                             
                             <div>
-                                <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Name</flux:text>
+                                <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Name</flux:text>
                                 <flux:text>{{ $selectedMapping->name ?? '-' }}</flux:text>
                             </div>
                             
                             <div>
-                                <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Webhook Type</flux:text>
+                                <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Webhook Type</flux:text>
                                 <flux:text>{{ $selectedMapping->webhook_type }}</flux:text>
                             </div>
                             
                             <div>
-                                <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Status</flux:text>
+                                <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Status</flux:text>
                                 <div>
                                     @if($selectedMapping->is_active)
                                         <flux:badge color="green">Aktiv</flux:badge>
@@ -439,59 +439,59 @@ $checkSubscriptions = function () {
                             </div>
                             
                             <div class="md:col-span-2">
-                                <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Job Class</flux:text>
+                                <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Job Class</flux:text>
                                 <flux:text class="break-all font-mono text-sm">{{ $selectedMapping->job_class }}</flux:text>
                             </div>
                             
                             @if($selectedMapping->description)
                                 <div class="md:col-span-2">
-                                    <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Description</flux:text>
+                                    <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Description</flux:text>
                                     <flux:text class="break-all">{{ $selectedMapping->description }}</flux:text>
                                 </div>
                             @endif
                             
                             @if($selectedMapping->filepath)
                             <div class="md:col-span-2">
-                                <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Filepath</flux:text>
+                                <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Filepath</flux:text>
                                 <flux:text class="break-all font-mono text-sm">{{ $selectedMapping->filepath }}</flux:text>
                             </div>
                             @endif
                             
                             @if($selectedMapping->upn)
                                 <div class="md:col-span-2">
-                                    <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">UPN</flux:text>
+                                    <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">UPN</flux:text>
                                     <flux:text class="break-all">{{ $selectedMapping->upn }}</flux:text>
                                 </div>
                             @endif
                             
                             @if($selectedMapping->resource)
                                 <div class="md:col-span-2">
-                                    <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Resource</flux:text>
+                                    <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Resource</flux:text>
                                     <flux:text class="break-all">{{ $selectedMapping->resource }}</flux:text>
                                 </div>
                             @endif
                             
                             @if($selectedMapping->notification_url)
                                 <div class="md:col-span-2">
-                                    <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Notification URL</flux:text>
+                                    <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Notification URL</flux:text>
                                     <flux:text class="break-all">{{ $selectedMapping->notification_url }}</flux:text>
                                 </div>
                             @endif
                             
                             @if($selectedMapping->change_type)
                                 <div>
-                                    <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Change Type</flux:text>
+                                    <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Change Type</flux:text>
                                     <flux:text>{{ $selectedMapping->change_type }}</flux:text>
                                 </div>
                             @endif
                             
                             <div>
-                                <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Created At</flux:text>
+                                <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Created At</flux:text>
                                 <flux:text>{{ $selectedMapping->created_at?->format('d.m.Y H:i:s') ?? '-' }}</flux:text>
                             </div>
                             
                             <div>
-                                <flux:text class="font-semibold text-zinc-700 dark:text-zinc-300">Updated At</flux:text>
+                                <flux:text class="font-semibold text-[#073070]/80 dark:text-white/70">Updated At</flux:text>
                                 <flux:text>{{ $selectedMapping->updated_at?->format('d.m.Y H:i:s') ?? '-' }}</flux:text>
                             </div>
                         </div>
