@@ -5,13 +5,17 @@
 ])
 
 @php
-    $defaultNavItems = [
+    $canAccessAuslandszugriff = auth()->user()?->can('manage-app-msgraph')
+        || auth()->user()?->can('manage-app-msgraph-lehrgangsverwaltung');
+
+    $defaultNavItems = array_values(array_filter([
         ['label' => 'Übersicht', 'href' => route('apps.msgraph.index'), 'icon' => 'home', 'description' => 'Zurück zur Übersicht', 'buttonText' => 'Übersicht anzeigen'],
         ['label' => 'Entra-User', 'href' => route('apps.msgraph.entra-user.index'), 'icon' => 'user', 'description' => 'Entra-User anzeigen', 'buttonText' => 'Entra-User öffnen'],
+        $canAccessAuslandszugriff ? ['label' => 'Auslandszugriff', 'href' => route('apps.msgraph.auslandszugriff.index'), 'icon' => 'globe-alt', 'description' => 'Auslandseinsatz-Gruppe verwalten', 'buttonText' => 'Auslandszugriff öffnen'] : null,
         ['label' => 'Meine Einstellungen', 'href' => route('apps.msgraph.settings.user'), 'icon' => 'cog-6-tooth', 'description' => 'Persönliche Einstellungen anpassen', 'buttonText' => 'Einstellungen öffnen'],
-        ['label' => 'Admin', 'href' => route('apps.msgraph.admin.index'), 'icon' => 'shield-check', 'description' => 'Administrationsbereich verwalten', 'buttonText' => 'Admin öffnen', 'permission' => 'manage-app-msgraph']
-    ];
-    
+        ['label' => 'Admin', 'href' => route('apps.msgraph.admin.index'), 'icon' => 'shield-check', 'description' => 'Administrationsbereich verwalten', 'buttonText' => 'Admin öffnen', 'permission' => 'manage-app-msgraph'],
+    ]));
+
     $navItems = !empty($navItems) ? $navItems : $defaultNavItems;
 @endphp
 

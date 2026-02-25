@@ -14,5 +14,7 @@ class AppSettings extends BaseAppSettings
         #[Description('Maximale Anzahl von Elementen pro Seite')]
         public int $maxItemsPerPage = 25,
 
+        #[Description('Gruppen-ID der Auslandseinsatz-Gruppe in Azure Entra')]
+        public string $gruppenIdAuslandseinsatz = '7d01d307-f7be-4b9c-a108-f40ca4844f29',
     ) {}
 }
