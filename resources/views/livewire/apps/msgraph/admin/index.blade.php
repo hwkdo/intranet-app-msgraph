@@ -124,12 +124,21 @@ $checkSubscriptions = function () {
 <x-intranet-app-msgraph::msgraph-layout heading="Msgraph App" subheading="Admin">
     <flux:tab.group>
         <flux:tabs wire:model="activeTab">
+            <flux:tab name="hintergrundbild" icon="photo">Hintergrundbild</flux:tab>
             <flux:tab name="einstellungen" icon="cog-6-tooth">Einstellungen</flux:tab>
             <flux:tab name="statistiken" icon="chart-bar">Statistiken</flux:tab>
             <flux:tab name="subscriptions" icon="bell">Registered Subscriptions</flux:tab>
             <flux:tab name="mappings" icon="link">Mappings</flux:tab>
         </flux:tabs>
-        
+
+        <flux:tab.panel name="hintergrundbild">
+            <div style="min-height: 400px;">
+                @livewire('intranet-app-base::app-background-image', [
+                    'appIdentifier' => 'msgraph',
+                ])
+            </div>
+        </flux:tab.panel>
+
         <flux:tab.panel name="einstellungen">
             <div style="min-height: 400px;">
                 @livewire('intranet-app-base::admin-settings', [
