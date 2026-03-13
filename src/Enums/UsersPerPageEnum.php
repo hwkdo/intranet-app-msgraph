@@ -8,4 +8,3 @@ enum UsersPerPageEnum: int
     case Fifty = 50;
     case OneHundred = 100;
 }
-

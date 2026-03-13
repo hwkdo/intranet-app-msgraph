@@ -143,7 +143,7 @@ $checkSubscriptions = function () {
             <div style="min-height: 400px;">
                 @livewire('intranet-app-base::admin-settings', [
                     'appIdentifier' => 'msgraph',
-                    'settingsModelClass' => '\Hwkdo\IntranetAppMsgraph\Models\IntranetAppmsgraphSettings',
+                    'settingsModelClass' => '\Hwkdo\IntranetAppMsgraph\Models\IntranetAppMsgraphSettings',
                     'appSettingsClass' => '\Hwkdo\IntranetAppMsgraph\Data\AppSettings'
                 ])
             </div>

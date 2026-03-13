@@ -1,6 +1,7 @@
 <?php
 
 use Hwkdo\IntranetAppMsgraph\Livewire\Auslandszugriff;
+use Hwkdo\IntranetAppMsgraph\Livewire\AzureApps;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
@@ -13,4 +14,5 @@ Route::middleware(['web', 'auth', 'can:see-app-msgraph'])->group(function () {
 
 Route::middleware(['web', 'auth', 'can:manage-app-msgraph'])->group(function () {
     Volt::route('apps/msgraph/admin', 'apps.msgraph.admin.index')->name('apps.msgraph.admin.index');
+    Route::get('apps/msgraph/azure-apps', AzureApps::class)->name('apps.msgraph.azure-apps.index');
 });

@@ -2,9 +2,8 @@
 
 namespace Hwkdo\IntranetAppMsgraph;
 
-use Hwkdo\IntranetAppMsgraph\Jobs\RemoveExpiredAuslandseinsatzMemberships;
 use Hwkdo\IntranetAppMsgraph\Livewire\Auslandszugriff;
-use Illuminate\Console\Scheduling\Schedule;
+use Hwkdo\IntranetAppMsgraph\Livewire\AzureApps;
 use Livewire\Livewire;
 use Livewire\Volt\Volt;
 use Spatie\LaravelPackageTools\Package;
@@ -29,14 +28,10 @@ class IntranetAppMsgraphServiceProvider extends PackageServiceProvider
     public function boot(): void
     {
         parent::boot();
-        // Gate::policy(Raum::class, RaumPolicy::class);
         $this->app->booted(function () {
             Volt::mount(__DIR__.'/../resources/views/livewire');
             Livewire::component('apps.msgraph.auslandszugriff', Auslandszugriff::class);
-
-            $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
-                $schedule->job(RemoveExpiredAuslandseinsatzMemberships::class)->dailyAt('02:00');
-            });
+            Livewire::component('apps.msgraph.azure-apps', AzureApps::class);
         });
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
         $this->loadRoutesFrom(__DIR__.'/../routes/console.php');

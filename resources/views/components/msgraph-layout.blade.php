@@ -13,6 +13,7 @@
         ['label' => 'Entra-User', 'href' => route('apps.msgraph.entra-user.index'), 'icon' => 'user', 'description' => 'Entra-User anzeigen', 'buttonText' => 'Entra-User öffnen'],
         $canAccessAuslandszugriff ? ['label' => 'Auslandszugriff', 'href' => route('apps.msgraph.auslandszugriff.index'), 'icon' => 'globe-alt', 'description' => 'Auslandseinsatz-Gruppe verwalten', 'buttonText' => 'Auslandszugriff öffnen'] : null,
         ['label' => 'Meine Einstellungen', 'href' => route('apps.msgraph.settings.user'), 'icon' => 'cog-6-tooth', 'description' => 'Persönliche Einstellungen anpassen', 'buttonText' => 'Einstellungen öffnen'],
+        auth()->user()?->can('manage-app-msgraph') ? ['label' => 'Azure Apps', 'href' => route('apps.msgraph.azure-apps.index'), 'icon' => 'key', 'description' => 'Azure App-Registrierungen und Secret-Ablauf', 'buttonText' => 'Azure Apps öffnen'] : null,
         ['label' => 'Admin', 'href' => route('apps.msgraph.admin.index'), 'icon' => 'shield-check', 'description' => 'Administrationsbereich verwalten', 'buttonText' => 'Admin öffnen', 'permission' => 'manage-app-msgraph'],
     ]));
 
