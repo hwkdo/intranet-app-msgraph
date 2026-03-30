@@ -3,9 +3,13 @@
 namespace Hwkdo\IntranetAppMsgraph;
 
 use Hwkdo\IntranetAppBase\Interfaces\IntranetAppInterface;
+use Hwkdo\IntranetAppBase\Interfaces\ProvidesDashboardWidgetsInterface;
+use Hwkdo\IntranetAppMsgraph\Dashboard\MsgraphDashboardWidgetProvider;
+use Hwkdo\IntranetAppMsgraph\Data\AppSettings;
+use Hwkdo\IntranetAppMsgraph\Data\UserSettings;
 use Illuminate\Support\Collection;
 
-class IntranetAppMsgraph implements IntranetAppInterface
+class IntranetAppMsgraph implements IntranetAppInterface, ProvidesDashboardWidgetsInterface
 {
     public static function app_name(): string
     {
@@ -34,16 +38,23 @@ class IntranetAppMsgraph implements IntranetAppInterface
 
     public static function userSettingsClass(): ?string
     {
-        return \Hwkdo\IntranetAppMsgraph\Data\UserSettings::class;
+        return UserSettings::class;
     }
 
     public static function appSettingsClass(): ?string
     {
-        return \Hwkdo\IntranetAppMsgraph\Data\AppSettings::class;
+        return AppSettings::class;
     }
 
     public static function mcpServers(): array
     {
         return [];
+    }
+
+    public static function dashboardWidgetProviders(): array
+    {
+        return [
+            MsgraphDashboardWidgetProvider::class,
+        ];
     }
 }
