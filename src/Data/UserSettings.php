@@ -21,5 +21,13 @@ class UserSettings extends BaseUserSettings
         #[Description('Anzahl der Entra User pro Seite')]
         #[WithCast(EnumCast::class)]
         public UsersPerPageEnum $defaultUsersPerPage = UsersPerPageEnum::TwentyFive,
+
+        #[Description('Persönliches Dashboard-Layout (Widgets, Positionen, Größen)')]
+        public array $dashboard = [
+            'version' => 1,
+            'enabledWidgets' => [],
+            'layout' => [],
+            'widgetItemCounts' => [],
+        ],
     ) {}
 }

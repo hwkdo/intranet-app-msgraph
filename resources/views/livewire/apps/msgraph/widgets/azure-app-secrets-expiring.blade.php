@@ -1,7 +1,7 @@
 <div class="h-full min-h-0 flex flex-col">
     <x-intranet-app-base::dashboard.widget-card
         title="Nächste Azure-App-Abläufe"
-        description="Secrets und Zertifikate mit Ablaufdatum (max. 5, noch nicht abgelaufen)"
+        :description="'Secrets und Zertifikate mit Ablaufdatum (max. '.$this->itemLimit().', noch nicht abgelaufen)'"
     >
         @forelse ($this->items as $row)
             <a

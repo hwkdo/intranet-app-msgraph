@@ -1,7 +1,8 @@
 @props([
     'heading' => '',
     'subheading' => '',
-    'navItems' => []
+    'navItems' => [],
+    'renderAppIndexAuto' => null,
 ])
 
 @php
@@ -29,7 +30,11 @@
     @endpush
 @endif
 
-@if(request()->routeIs('apps.msgraph.index'))
+@php
+    $shouldRenderAppIndexAuto = $renderAppIndexAuto ?? request()->routeIs('apps.msgraph.index');
+@endphp
+
+@if($shouldRenderAppIndexAuto)
     <x-intranet-app-base::app-layout 
         app-identifier="msgraph"
         :heading="$heading"
