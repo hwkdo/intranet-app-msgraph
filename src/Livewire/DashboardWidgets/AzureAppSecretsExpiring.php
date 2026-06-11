@@ -2,6 +2,7 @@
 
 namespace Hwkdo\IntranetAppMsgraph\Livewire\DashboardWidgets;
 
+use Carbon\Carbon;
 use Hwkdo\IntranetAppMsgraph\Support\UpcomingAzureAppSecretsList;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphAppServiceInterface;
 use Illuminate\Contracts\View\View;
@@ -32,7 +33,7 @@ class AzureAppSecretsExpiring extends Component
      *     appId: string,
      *     secretDisplayName: string,
      *     credentialType: string,
-     *     endDateTime: \Carbon\Carbon,
+     *     endDateTime: Carbon,
      *     daysUntilExpiry: int
      * }>
      */

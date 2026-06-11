@@ -1,13 +1,13 @@
 <?php
 
 use Hwkdo\IntranetAppMsgraph\Jobs\CheckAzureAppSecretsExpiry;
-use Hwkdo\IntranetAppMsgraph\Jobs\RemoveExpiredAuslandseinsatzMemberships;
+use Hwkdo\IntranetAppMsgraph\Jobs\ProcessAuslandseinsatzMemberships;
 use Illuminate\Support\Facades\Schedule;
 
 // In Tests überspringe das Laden der Settings
 if (! app()->runningUnitTests()) {
 
-    Schedule::job(new RemoveExpiredAuslandseinsatzMemberships)
+    Schedule::job(new ProcessAuslandseinsatzMemberships)
         ->dailyAt('00:01');
 
     Schedule::job(new CheckAzureAppSecretsExpiry)

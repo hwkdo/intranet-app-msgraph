@@ -2,13 +2,16 @@
 
 namespace Hwkdo\IntranetAppMsgraph\Livewire;
 
+use Flux\DateRange;
 use Flux\Flux;
+use Hwkdo\IntranetAppMsgraph\Enums\AuslandseinsatzMembershipStatus;
 use Hwkdo\IntranetAppMsgraph\Models\AuslandseinsatzMembership;
 use Hwkdo\IntranetAppMsgraph\Models\IntranetAppMsgraphSettings;
 use Hwkdo\IntranetAppMsgraph\Services\GraphGroupService;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphUserServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -26,7 +29,7 @@ class Auslandszugriff extends Component
     /** @var array{id: string, upn: string, displayName: string}|null */
     public ?array $selectedUser = null;
 
-    public ?int $anzahlTage = null;
+    public ?DateRange $zeitraum = null;
 
     public function mount(): void
     {
@@ -47,40 +50,63 @@ class Auslandszugriff extends Component
     }
 
     /**
-     * @return array<int, array{id: string, upn: string, displayName: string, addedAt: string, expiresAt: string|null, membershipId: int|null}>
+     * @return array{managed: array<int, array<string, mixed>>, untracked: array<int, array<string, mixed>>}
      */
     #[Computed]
-    public function members(): array
+    public function entries(): array
     {
         $groupId = $this->groupId;
 
-        if (! $groupId) {
-            return [];
+        $managed = AuslandseinsatzMembership::query()
+            ->active()
+            ->orderBy('starts_at')
+            ->get()
+            ->map(function (AuslandseinsatzMembership $membership): array {
+                return [
+                    'membershipId' => $membership->id,
+                    'upn' => $membership->upn,
+                    'displayName' => $membership->user_display_name,
+                    'startsAt' => $membership->starts_at->format('d.m.Y'),
+                    'endsAt' => $membership->ends_at->format('d.m.Y'),
+                    'status' => $membership->status()->value,
+                    'statusLabel' => $this->statusLabel($membership->status()),
+                    'managed' => true,
+                ];
+            })
+            ->all();
+
+        $managed = $this->filterByPermission($managed);
+
+        $managedUpns = array_column($managed, 'upn');
+
+        $untracked = [];
+
+        if ($groupId) {
+            $rawMembers = app(GraphGroupService::class)->getGroupMembers($groupId);
+            $rawMembers = $this->filterByPermission($rawMembers);
+
+            foreach ($rawMembers as $member) {
+                if (in_array($member['upn'], $managedUpns, true)) {
+                    continue;
+                }
+
+                $untracked[] = [
+                    'id' => $member['id'],
+                    'upn' => $member['upn'],
+                    'displayName' => $member['displayName'],
+                    'startsAt' => '–',
+                    'endsAt' => '–',
+                    'status' => AuslandseinsatzMembershipStatus::NichtVerwaltet->value,
+                    'statusLabel' => 'Nicht verwaltet',
+                    'managed' => false,
+                ];
+            }
         }
 
-        $rawMembers = app(GraphGroupService::class)->getGroupMembers($groupId);
-
-        $rawMembers = $this->filterByPermission($rawMembers);
-
-        $trackingMap = AuslandseinsatzMembership::query()
-            ->active()
-            ->whereIn('upn', array_column($rawMembers, 'upn'))
-            ->get()
-            ->keyBy('upn');
-
-        return array_map(function (array $member) use ($trackingMap) {
-            /** @var AuslandseinsatzMembership|null $tracked */
-            $tracked = $trackingMap->get($member['upn']);
-
-            return [
-                'id' => $member['id'],
-                'upn' => $member['upn'],
-                'displayName' => $member['displayName'],
-                'addedAt' => $tracked?->created_at?->format('d.m.Y H:i') ?? '–',
-                'expiresAt' => $tracked?->expires_at?->format('d.m.Y') ?? null,
-                'membershipId' => $tracked?->id,
-            ];
-        }, $rawMembers);
+        return [
+            'managed' => array_values($managed),
+            'untracked' => $untracked,
+        ];
     }
 
     public function updatedSearch(): void
@@ -120,35 +146,79 @@ class Auslandszugriff extends Component
             return;
         }
 
-        $groupId = $this->groupId;
+        $this->validate([
+            'zeitraum' => ['required'],
+        ], [
+            'zeitraum.required' => 'Bitte einen Aufenthaltszeitraum wählen.',
+        ]);
 
-        $success = app(GraphGroupService::class)->addUserToGroup($groupId, $this->selectedUser['id']);
-
-        if (! $success) {
-            Flux::toast(heading: 'Fehler', text: 'Benutzer konnte nicht zur Gruppe hinzugefügt werden.', variant: 'danger');
-
-            return;
+        if (! $this->zeitraum?->hasStart() || ! $this->zeitraum?->hasEnd()) {
+            throw ValidationException::withMessages([
+                'zeitraum' => 'Bitte Start- und Enddatum des Aufenthalts angeben.',
+            ]);
         }
 
-        AuslandseinsatzMembership::create([
+        $startsAt = $this->zeitraum->start()->startOfDay();
+        $endsAt = $this->zeitraum->end()->startOfDay();
+
+        if ($endsAt->lt($startsAt)) {
+            throw ValidationException::withMessages([
+                'zeitraum' => 'Das Enddatum muss am oder nach dem Startdatum liegen.',
+            ]);
+        }
+
+        if ($startsAt->lt(now()->startOfDay())) {
+            throw ValidationException::withMessages([
+                'zeitraum' => 'Der Aufenthaltsbeginn darf nicht in der Vergangenheit liegen.',
+            ]);
+        }
+
+        if ($startsAt->diffInDays($endsAt) > 365) {
+            throw ValidationException::withMessages([
+                'zeitraum' => 'Der Aufenthalt darf maximal 365 Tage dauern.',
+            ]);
+        }
+
+        $membership = AuslandseinsatzMembership::create([
             'upn' => $this->selectedUser['upn'],
             'user_display_name' => $this->selectedUser['displayName'],
             'added_by_upn' => Auth::user()->upn ?? Auth::user()->email,
-            'expires_at' => $this->anzahlTage
-                ? now()->addDays($this->anzahlTage)
-                : null,
+            'starts_at' => $startsAt->toDateString(),
+            'ends_at' => $endsAt->toDateString(),
+            'azure_user_id' => $this->selectedUser['id'],
         ]);
 
-        Flux::toast(heading: 'Erfolg', text: 'Benutzer wurde zur Gruppe hinzugefügt.', variant: 'success');
+        if ($membership->startsOnOrBeforeToday()) {
+            $groupId = $this->groupId;
+            $success = app(GraphGroupService::class)->addUserToGroup($groupId, $this->selectedUser['id']);
 
-        $this->reset(['showAddForm', 'search', 'searchResults', 'selectedUser', 'anzahlTage']);
-        unset($this->members);
+            if (! $success) {
+                $membership->delete();
+                Flux::toast(heading: 'Fehler', text: 'Benutzer konnte nicht zur Gruppe hinzugefügt werden.', variant: 'danger');
+
+                return;
+            }
+
+            $membership->markAsActivated();
+        }
+
+        Flux::toast(
+            heading: 'Erfolg',
+            text: $membership->isActivated()
+                ? 'Benutzer wurde zur Gruppe hinzugefügt.'
+                : 'Aufenthalt geplant — Gruppenbeitritt erfolgt automatisch zum Startdatum.',
+            variant: 'success'
+        );
+
+        $this->reset(['showAddForm', 'search', 'searchResults', 'selectedUser', 'zeitraum']);
+        unset($this->entries);
     }
 
-    public function removeUser(string $upn): void
+    public function removeUntrackedMember(string $upn): void
     {
-        $groupId = $this->groupId;
+        abort_unless($this->canModifyUpn($upn), 403);
 
+        $groupId = $this->groupId;
         $success = app(MsGraphUserServiceInterface::class)->removeUserFromGroup($upn, $groupId);
 
         if (! $success) {
@@ -157,14 +227,33 @@ class Auslandszugriff extends Component
             return;
         }
 
-        AuslandseinsatzMembership::query()
-            ->active()
-            ->where('upn', $upn)
-            ->delete();
-
         Flux::toast(heading: 'Erfolg', text: 'Benutzer wurde aus der Gruppe entfernt.', variant: 'success');
 
-        unset($this->members);
+        unset($this->entries);
+    }
+
+    public function removeMembership(int $membershipId): void
+    {
+        $membership = AuslandseinsatzMembership::query()->active()->findOrFail($membershipId);
+
+        abort_unless($this->canModifyUpn($membership->upn), 403);
+
+        if ($membership->isActivated()) {
+            $groupId = $this->groupId;
+            $success = app(MsGraphUserServiceInterface::class)->removeUserFromGroup($membership->upn, $groupId);
+
+            if (! $success) {
+                Flux::toast(heading: 'Fehler', text: 'Benutzer konnte nicht aus der Gruppe entfernt werden.', variant: 'danger');
+
+                return;
+            }
+        }
+
+        $membership->markAsRemoved();
+
+        Flux::toast(heading: 'Erfolg', text: 'Eintrag wurde entfernt.', variant: 'success');
+
+        unset($this->entries);
     }
 
     public function toggleAddForm(): void
@@ -172,28 +261,41 @@ class Auslandszugriff extends Component
         $this->showAddForm = ! $this->showAddForm;
 
         if (! $this->showAddForm) {
-            $this->reset(['search', 'searchResults', 'selectedUser', 'anzahlTage']);
+            $this->reset(['search', 'searchResults', 'selectedUser', 'zeitraum']);
         }
     }
 
     /**
-     * Filtert Benutzer nach der Lehrgangsverwaltungs-Permission:
-     * Benutzer ohne manage-app-msgraph sehen nur @hwkdoedu.onmicrosoft.com-Konten.
-     *
      * @param  array<int, array{upn: string, ...}>  $users
      * @return array<int, array{upn: string, ...}>
      */
     private function filterByPermission(array $users): array
+    {
+        return array_values(array_filter($users, fn ($u) => $this->canModifyUpn($u['upn'])));
+    }
+
+    private function canModifyUpn(string $upn): bool
     {
         $currentUser = Auth::user();
         $isLehrgangsverwaltungOnly = $currentUser->can('manage-app-msgraph-lehrgangsverwaltung')
             && ! $currentUser->can('manage-app-msgraph');
 
         if (! $isLehrgangsverwaltungOnly) {
-            return $users;
+            return true;
         }
 
-        return array_values(array_filter($users, fn ($u) => str_contains($u['upn'], '@hwkdoedu.onmicrosoft.com')));
+        return str_contains($upn, '@hwkdoedu.onmicrosoft.com');
+    }
+
+    private function statusLabel(AuslandseinsatzMembershipStatus $status): string
+    {
+        return match ($status) {
+            AuslandseinsatzMembershipStatus::Geplant => 'Geplant',
+            AuslandseinsatzMembershipStatus::Aktiv => 'Aktiv',
+            AuslandseinsatzMembershipStatus::Abgelaufen => 'Abgelaufen',
+            AuslandseinsatzMembershipStatus::Entfernt => 'Entfernt',
+            AuslandseinsatzMembershipStatus::NichtVerwaltet => 'Nicht verwaltet',
+        };
     }
 
     public function render(): View

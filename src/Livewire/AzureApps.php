@@ -13,8 +13,11 @@ use Livewire\Component;
 class AzureApps extends Component
 {
     public string $search = '';
+
     public bool $showExpired = true;
+
     public string $sortField = 'end_date';
+
     public string $sortDirection = 'asc';
 
     public function mount(): void
