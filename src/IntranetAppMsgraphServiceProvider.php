@@ -5,6 +5,7 @@ namespace Hwkdo\IntranetAppMsgraph;
 use Hwkdo\IntranetAppMsgraph\Livewire\Auslandszugriff;
 use Hwkdo\IntranetAppMsgraph\Livewire\AzureApps;
 use Hwkdo\IntranetAppMsgraph\Livewire\DashboardWidgets\AzureAppSecretsExpiring;
+use Illuminate\Console\Scheduling\Schedule;
 use Livewire\Livewire;
 use Livewire\Volt\Volt;
 use Spatie\LaravelPackageTools\Package;
@@ -36,6 +37,8 @@ class IntranetAppMsgraphServiceProvider extends PackageServiceProvider
             Livewire::component('apps.msgraph.widgets.azure-app-secrets-expiring', AzureAppSecretsExpiring::class);
         });
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
-        $this->loadRoutesFrom(__DIR__.'/../routes/console.php');
+        $this->app->resolving(Schedule::class, function (): void {
+            require __DIR__.'/../routes/console.php';
+        });
     }
 }
