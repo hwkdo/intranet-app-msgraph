@@ -1,5 +1,3 @@
 <?php
 
-use Hwkdo\IntranetAppMsgraph\Tests\TestCase;
-
-uses(TestCase::class)->in(__DIR__);
+// Tests in this package are executed via the main application test suite.
