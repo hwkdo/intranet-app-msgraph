@@ -27,6 +27,36 @@ class TeamsBotAdmin extends Component
 
     public string $testMessage = 'Dies ist eine Testnachricht vom HWK Intranet Teams-Bot.';
 
+    public string $teamSearch = '';
+
+    /** @var array<int, array{teamId: string, teamName: string}> */
+    public array $teamSearchResults = [];
+
+    /** @var array{teamId: string, teamName: string}|null */
+    public ?array $selectedTeam = null;
+
+    /** @var array<int, array{channelId: string, channelName: string}> */
+    public array $teamChannels = [];
+
+    public string $selectedChannelId = '';
+
+    public string $channelTestMessage = 'Dies ist eine Testnachricht vom HWK Intranet Teams-Bot im Kanal.';
+
+    public string $chatUserSearch = '';
+
+    /** @var array<int, array{id: string, upn: string, displayName: string}> */
+    public array $chatUserSearchResults = [];
+
+    /** @var array{id: string, upn: string, displayName: string}|null */
+    public ?array $selectedChatUser = null;
+
+    /** @var array<int, array{chatId: string, label: string}> */
+    public array $groupChats = [];
+
+    public string $selectedChatId = '';
+
+    public string $chatTestMessage = 'Dies ist eine Testnachricht vom HWK Intranet Teams-Bot im Gruppenchat.';
+
     public function updatedSearch(): void
     {
         if (strlen(trim($this->search)) < 2) {
@@ -66,6 +96,51 @@ class TeamsBotAdmin extends Component
         $this->selectedUser = null;
         $this->search = '';
         $this->searchResults = [];
+    }
+
+    public function updatedTeamSearch(): void
+    {
+        if (strlen(trim($this->teamSearch)) < 2) {
+            $this->teamSearchResults = [];
+
+            return;
+        }
+
+        try {
+            $this->teamSearchResults = app(MsGraphTeamsBotServiceInterface::class)
+                ->searchTenantTeams(trim($this->teamSearch));
+        } catch (Throwable $exception) {
+            $this->teamSearchResults = [];
+            Flux::toast(variant: 'danger', text: 'Team-Suche fehlgeschlagen: '.$exception->getMessage());
+        }
+    }
+
+    public function selectTeam(string $teamId, string $teamName): void
+    {
+        $this->selectedTeam = [
+            'teamId' => $teamId,
+            'teamName' => $teamName,
+        ];
+        $this->teamSearch = $teamName;
+        $this->teamSearchResults = [];
+        $this->selectedChannelId = '';
+        $this->teamChannels = [];
+
+        try {
+            $this->teamChannels = app(MsGraphTeamsBotServiceInterface::class)
+                ->listTeamChannels($teamId);
+        } catch (Throwable $exception) {
+            Flux::toast(variant: 'danger', text: 'Kanäle konnten nicht geladen werden: '.$exception->getMessage());
+        }
+    }
+
+    public function clearSelectedTeam(): void
+    {
+        $this->selectedTeam = null;
+        $this->teamSearch = '';
+        $this->teamSearchResults = [];
+        $this->teamChannels = [];
+        $this->selectedChannelId = '';
     }
 
     #[Computed]
@@ -183,6 +258,156 @@ class TeamsBotAdmin extends Component
             unset($this->conversations);
         } catch (Throwable $exception) {
             Flux::toast(variant: 'danger', text: 'Testnachricht fehlgeschlagen: '.$exception->getMessage());
+        }
+    }
+
+    public function installBotForTeam(): void
+    {
+        if ($this->selectedTeam === null) {
+            Flux::toast(variant: 'warning', text: 'Bitte zuerst ein Team auswählen.');
+
+            return;
+        }
+
+        try {
+            app(MsGraphTeamsBotServiceInterface::class)->installForTeam($this->selectedTeam['teamId']);
+
+            Flux::toast(variant: 'success', text: 'Bot wurde im Team installiert bzw. auf die neueste Version aktualisiert.');
+        } catch (Throwable $exception) {
+            Flux::toast(variant: 'danger', text: 'Team-Installation fehlgeschlagen: '.$exception->getMessage());
+        }
+    }
+
+    public function sendChannelTestMessage(): void
+    {
+        if ($this->selectedTeam === null) {
+            Flux::toast(variant: 'warning', text: 'Bitte zuerst ein Team auswählen.');
+
+            return;
+        }
+
+        if (trim($this->selectedChannelId) === '') {
+            Flux::toast(variant: 'warning', text: 'Bitte zuerst einen Kanal auswählen.');
+
+            return;
+        }
+
+        $message = trim($this->channelTestMessage);
+
+        if ($message === '') {
+            Flux::toast(variant: 'warning', text: 'Bitte eine Testnachricht eingeben.');
+
+            return;
+        }
+
+        try {
+            app(MsGraphTeamsBotServiceInterface::class)->sendChannelMessage(
+                $this->selectedTeam['teamId'],
+                $this->selectedChannelId,
+                $message,
+            );
+
+            Flux::toast(variant: 'success', text: 'Kanal-Testnachricht wurde in die Queue gestellt.');
+        } catch (Throwable $exception) {
+            Flux::toast(variant: 'danger', text: 'Kanal-Testnachricht fehlgeschlagen: '.$exception->getMessage());
+        }
+    }
+
+    public function updatedChatUserSearch(): void
+    {
+        if (strlen(trim($this->chatUserSearch)) < 2) {
+            $this->chatUserSearchResults = [];
+
+            return;
+        }
+
+        $userService = app(MsGraphUserServiceInterface::class);
+        $result = $userService->getUsersPaginated(20, trim($this->chatUserSearch));
+        $users = $result['users'] ?? [];
+
+        $this->chatUserSearchResults = collect($users)
+            ->map(fn ($user): array => [
+                'id' => (string) $user->getId(),
+                'upn' => (string) $user->getUserPrincipalName(),
+                'displayName' => (string) ($user->getDisplayName() ?? ''),
+            ])
+            ->filter(fn (array $user): bool => $user['id'] !== '' && $user['upn'] !== '')
+            ->values()
+            ->all();
+    }
+
+    public function selectChatUser(string $upn, string $displayName, string $id): void
+    {
+        $this->selectedChatUser = [
+            'id' => $id,
+            'upn' => $upn,
+            'displayName' => $displayName,
+        ];
+        $this->chatUserSearch = $displayName !== '' ? $displayName : $upn;
+        $this->chatUserSearchResults = [];
+        $this->selectedChatId = '';
+        $this->groupChats = [];
+
+        try {
+            $this->groupChats = app(MsGraphTeamsBotServiceInterface::class)
+                ->listUserGroupChats($id);
+
+            if ($this->groupChats === []) {
+                Flux::toast(variant: 'warning', text: 'Für diesen Benutzer wurden keine Gruppenchats gefunden.');
+            }
+        } catch (Throwable $exception) {
+            Flux::toast(variant: 'danger', text: 'Gruppenchats konnten nicht geladen werden: '.$exception->getMessage());
+        }
+    }
+
+    public function clearSelectedChatUser(): void
+    {
+        $this->selectedChatUser = null;
+        $this->chatUserSearch = '';
+        $this->chatUserSearchResults = [];
+        $this->groupChats = [];
+        $this->selectedChatId = '';
+    }
+
+    public function installBotForChat(): void
+    {
+        if (trim($this->selectedChatId) === '') {
+            Flux::toast(variant: 'warning', text: 'Bitte zuerst einen Gruppenchat auswählen.');
+
+            return;
+        }
+
+        try {
+            app(MsGraphTeamsBotServiceInterface::class)->installForChat($this->selectedChatId);
+
+            Flux::toast(variant: 'success', text: 'Bot wurde im Gruppenchat installiert bzw. auf die neueste Version aktualisiert.');
+        } catch (Throwable $exception) {
+            Flux::toast(variant: 'danger', text: 'Gruppenchat-Installation fehlgeschlagen: '.$exception->getMessage());
+        }
+    }
+
+    public function sendChatTestMessage(): void
+    {
+        if (trim($this->selectedChatId) === '') {
+            Flux::toast(variant: 'warning', text: 'Bitte zuerst einen Gruppenchat auswählen.');
+
+            return;
+        }
+
+        $message = trim($this->chatTestMessage);
+
+        if ($message === '') {
+            Flux::toast(variant: 'warning', text: 'Bitte eine Testnachricht eingeben.');
+
+            return;
+        }
+
+        try {
+            app(MsGraphTeamsBotServiceInterface::class)->sendChatMessage($this->selectedChatId, $message);
+
+            Flux::toast(variant: 'success', text: 'Gruppenchat-Testnachricht wurde in die Queue gestellt.');
+        } catch (Throwable $exception) {
+            Flux::toast(variant: 'danger', text: 'Gruppenchat-Testnachricht fehlgeschlagen: '.$exception->getMessage());
         }
     }
 
