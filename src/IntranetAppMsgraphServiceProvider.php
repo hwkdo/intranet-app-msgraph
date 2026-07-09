@@ -4,8 +4,6 @@ namespace Hwkdo\IntranetAppMsgraph;
 
 use Hwkdo\IntranetAppMsgraph\Livewire\Auslandszugriff;
 use Hwkdo\IntranetAppMsgraph\Livewire\AzureApps;
-use Hwkdo\IntranetAppMsgraph\Livewire\TeamsBotAdmin;
-use Hwkdo\IntranetAppMsgraph\LivewireAdmin\TeamsActivityFeedAdmin;
 use Hwkdo\IntranetAppMsgraph\Livewire\DashboardWidgets\AzureAppSecretsExpiring;
 use Illuminate\Console\Scheduling\Schedule;
 use Livewire\Livewire;
@@ -36,8 +34,6 @@ class IntranetAppMsgraphServiceProvider extends PackageServiceProvider
             Volt::mount(__DIR__.'/../resources/views/livewire');
             Livewire::component('apps.msgraph.auslandszugriff', Auslandszugriff::class);
             Livewire::component('apps.msgraph.azure-apps', AzureApps::class);
-            Livewire::component('apps.msgraph.teams-bot-admin', TeamsBotAdmin::class);
-            Livewire::component('apps.msgraph.teams-activity-feed-admin', TeamsActivityFeedAdmin::class);
             Livewire::component('apps.msgraph.widgets.azure-app-secrets-expiring', AzureAppSecretsExpiring::class);
         });
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');

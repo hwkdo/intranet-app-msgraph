@@ -129,8 +129,6 @@ $checkSubscriptions = function () {
             <flux:tab name="statistiken" icon="chart-bar">Statistiken</flux:tab>
             <flux:tab name="subscriptions" icon="bell">Registered Subscriptions</flux:tab>
             <flux:tab name="mappings" icon="link">Mappings</flux:tab>
-            <flux:tab name="teams-bot" icon="chat-bubble-left-right">Teams Bot</flux:tab>
-            <flux:tab name="teams-activity-feed" icon="bell-alert">Activity Feed</flux:tab>
         </flux:tabs>
 
         <flux:tab.panel name="hintergrundbild">
@@ -375,18 +373,6 @@ $checkSubscriptions = function () {
                     @endif
                 </flux:card>
             </div>            
-        </flux:tab.panel>
-
-        <flux:tab.panel name="teams-bot">
-            <div style="min-height: 400px;">
-                @livewire('apps.msgraph.teams-bot-admin')
-            </div>
-        </flux:tab.panel>
-
-        <flux:tab.panel name="teams-activity-feed">
-            <div style="min-height: 400px;">
-                @livewire('apps.msgraph.teams-activity-feed-admin')
-            </div>
         </flux:tab.panel>
     </flux:tab.group>    
 </x-intranet-app-msgraph::msgraph-layout>
