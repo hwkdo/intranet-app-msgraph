@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schedule;
 if (! app()->runningUnitTests()) {
 
     Schedule::job(new ProcessAuslandseinsatzMemberships)
-        ->dailyAt('00:01');
+        ->everyFourHours();
 
     Schedule::job(new CheckAzureAppSecretsExpiry)
         ->dailyAt('06:00');

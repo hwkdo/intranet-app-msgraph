@@ -52,6 +52,8 @@ class AuslandseinsatzMembership extends Model
     }
 
     /**
+     * Geplante Aufenthalte, deren Zeitraum heute beginnt oder läuft (noch nicht abgelaufen).
+     *
      * @param  Builder<AuslandseinsatzMembership>  $query
      * @return Builder<AuslandseinsatzMembership>
      */
@@ -59,7 +61,22 @@ class AuslandseinsatzMembership extends Model
     {
         return $query->whereNull('removed_at')
             ->whereNull('activated_at')
-            ->whereDate('starts_at', '<=', now()->toDateString());
+            ->whereDate('starts_at', '<=', now()->toDateString())
+            ->whereDate('ends_at', '>=', now()->toDateString());
+    }
+
+    /**
+     * Geplante Aufenthalte, die nie aktiviert wurden und deren Enddatum vorbei ist.
+     * Diese dürfen nicht erst in die Gruppe und danach wieder entfernt werden.
+     *
+     * @param  Builder<AuslandseinsatzMembership>  $query
+     * @return Builder<AuslandseinsatzMembership>
+     */
+    public function scopeExpiredWithoutActivation(Builder $query): Builder
+    {
+        return $query->whereNull('removed_at')
+            ->whereNull('activated_at')
+            ->whereDate('ends_at', '<', now()->toDateString());
     }
 
     /**

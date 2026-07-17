@@ -22,6 +22,11 @@ class ProcessAuslandseinsatzMemberships implements ShouldQueue
         $groupService = app(GraphGroupService::class);
         $userService = app(MsGraphUserServiceInterface::class);
 
+        AuslandseinsatzMembership::query()->expiredWithoutActivation()->each(function (AuslandseinsatzMembership $membership): void {
+            $membership->markAsRemoved();
+            Log::info('Auslandseinsatz: Geplanter Eintrag für '.$membership->upn.' abgelaufen ohne Aktivierung — lokal entfernt.');
+        });
+
         AuslandseinsatzMembership::query()->dueToActivate()->each(function (AuslandseinsatzMembership $membership) use ($groupId, $groupService): void {
             if (! $membership->azure_user_id) {
                 Log::error('Auslandseinsatz: Keine Azure-User-ID für '.$membership->upn.' — Aktivierung übersprungen.');
@@ -39,8 +44,18 @@ class ProcessAuslandseinsatzMemberships implements ShouldQueue
             }
         });
 
-        AuslandseinsatzMembership::query()->dueToDeactivate()->each(function (AuslandseinsatzMembership $membership) use ($groupId, $userService): void {
+        AuslandseinsatzMembership::query()->dueToDeactivate()->each(function (AuslandseinsatzMembership $membership) use ($groupId, $groupService, $userService): void {
             $success = $userService->removeUserFromGroup($membership->upn, $groupId);
+
+            if (! $success && ! $this->isMemberOfGroup($groupService, $groupId, $membership)) {
+                $membership->markAsRemoved();
+                Log::warning('Auslandseinsatz: Graph-Remove fehlgeschlagen, User nicht (mehr) in Gruppe — lokal als entfernt markiert.', [
+                    'upn' => $membership->upn,
+                    'group_id' => $groupId,
+                ]);
+
+                return;
+            }
 
             if ($success) {
                 $membership->markAsRemoved();
@@ -49,5 +64,25 @@ class ProcessAuslandseinsatzMemberships implements ShouldQueue
                 Log::error('Auslandseinsatz: Fehler beim Entfernen von '.$membership->upn.' aus Gruppe '.$groupId);
             }
         });
+    }
+
+    private function isMemberOfGroup(
+        GraphGroupService $groupService,
+        string $groupId,
+        AuslandseinsatzMembership $membership,
+    ): bool {
+        $members = $groupService->getGroupMembers($groupId);
+
+        foreach ($members as $member) {
+            if (($member['upn'] ?? '') === $membership->upn) {
+                return true;
+            }
+
+            if ($membership->azure_user_id && ($member['id'] ?? '') === $membership->azure_user_id) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

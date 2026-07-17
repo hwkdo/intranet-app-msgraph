@@ -44,3 +44,18 @@ it('detects when membership should start on or before today', function () {
 
     expect($membership->startsOnOrBeforeToday())->toBeTrue();
 });
+
+it('scopes dueToActivate to memberships that have not ended yet', function () {
+    $sql = AuslandseinsatzMembership::query()->dueToActivate()->toSql();
+
+    expect($sql)->toContain('starts_at')
+        ->and($sql)->toContain('ends_at')
+        ->and($sql)->toContain('activated_at');
+});
+
+it('scopes expiredWithoutActivation to never-activated past stays', function () {
+    $sql = AuslandseinsatzMembership::query()->expiredWithoutActivation()->toSql();
+
+    expect($sql)->toContain('ends_at')
+        ->and($sql)->toContain('activated_at');
+});
