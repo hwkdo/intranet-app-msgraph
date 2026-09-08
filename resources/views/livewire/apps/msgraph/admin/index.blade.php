@@ -119,6 +119,42 @@ $checkSubscriptions = function () {
     }
 };
 
+$registerSubscription = function (int $mappingId, bool $force = false) {
+    $mapping = GraphWebhookJobMapping::query()->find($mappingId);
+
+    if (! $mapping) {
+        Flux::toast(
+            variant: 'danger',
+            text: 'Mapping wurde nicht gefunden.'
+        );
+
+        return;
+    }
+
+    try {
+        $result = app(SubscriptionService::class)->syncMapping($mapping, $force);
+
+        Flux::toast(
+            variant: $result['ok'] ? 'success' : 'danger',
+            text: $result['message'],
+        );
+
+        if ($result['ok']) {
+            unset($this->subscriptions);
+        }
+    } catch (\Throwable $exception) {
+        Log::error('Msgraph Admin - Fehler beim Registrieren einer Subscription', [
+            'mapping_id' => $mappingId,
+            'message' => $exception->getMessage(),
+        ]);
+
+        Flux::toast(
+            variant: 'danger',
+            text: 'Subscription konnte nicht registriert werden: '.$exception->getMessage(),
+        );
+    }
+};
+
 ?>
 <div>
 <x-intranet-app-msgraph::msgraph-layout heading="Msgraph App" subheading="Admin">
@@ -357,14 +393,40 @@ $checkSubscriptions = function () {
                                             {{ $mapping->created_at?->format('d.m.Y H:i:s') ?? '-' }}
                                         </flux:table.cell>
                                         <flux:table.cell>
-                                            <flux:button
-                                                wire:click="showMappingDetails({{ $mapping->id }})"
-                                                size="xs"
-                                                icon="eye"
-                                                variant="ghost"
-                                            >
-                                                Details
-                                            </flux:button>
+                                            <div class="flex flex-wrap gap-1">
+                                                <flux:button
+                                                    wire:click="showMappingDetails({{ $mapping->id }})"
+                                                    size="xs"
+                                                    icon="eye"
+                                                    variant="ghost"
+                                                >
+                                                    Details
+                                                </flux:button>
+                                                @if($mapping->is_active && $mapping->resource && $mapping->notification_url)
+                                                    <flux:button
+                                                        wire:click="registerSubscription({{ $mapping->id }})"
+                                                        wire:target="registerSubscription({{ $mapping->id }})"
+                                                        wire:loading.attr="disabled"
+                                                        size="xs"
+                                                        icon="bell"
+                                                        variant="primary"
+                                                    >
+                                                        <span wire:loading.remove wire:target="registerSubscription({{ $mapping->id }})">Registrieren</span>
+                                                        <span wire:loading wire:target="registerSubscription({{ $mapping->id }})">…</span>
+                                                    </flux:button>
+                                                    <flux:button
+                                                        wire:click="registerSubscription({{ $mapping->id }}, true)"
+                                                        wire:target="registerSubscription({{ $mapping->id }}, true)"
+                                                        wire:loading.attr="disabled"
+                                                        size="xs"
+                                                        icon="arrow-path"
+                                                        variant="ghost"
+                                                        title="Erneut bei Graph registrieren, auch wenn noch gültig"
+                                                    >
+                                                        Erneuern
+                                                    </flux:button>
+                                                @endif
+                                            </div>
                                         </flux:table.cell>
                                     </flux:table.row>
                                 @endforeach
@@ -506,6 +568,27 @@ $checkSubscriptions = function () {
                         </div>
                         
                         <div class="flex justify-end gap-2">
+                            @if($selectedMapping->is_active && $selectedMapping->resource && $selectedMapping->notification_url)
+                                <flux:button
+                                    wire:click="registerSubscription({{ $selectedMapping->id }})"
+                                    wire:target="registerSubscription({{ $selectedMapping->id }})"
+                                    wire:loading.attr="disabled"
+                                    icon="bell"
+                                    variant="primary"
+                                >
+                                    <span wire:loading.remove wire:target="registerSubscription({{ $selectedMapping->id }})">Registrieren</span>
+                                    <span wire:loading wire:target="registerSubscription({{ $selectedMapping->id }})">Registriere...</span>
+                                </flux:button>
+                                <flux:button
+                                    wire:click="registerSubscription({{ $selectedMapping->id }}, true)"
+                                    wire:target="registerSubscription({{ $selectedMapping->id }}, true)"
+                                    wire:loading.attr="disabled"
+                                    icon="arrow-path"
+                                    variant="ghost"
+                                >
+                                    Erzwingen erneuern
+                                </flux:button>
+                            @endif
                             <flux:button variant="ghost" x-on:click="$flux.modal('mapping-details-modal').close()">
                                 Schließen
                             </flux:button>
