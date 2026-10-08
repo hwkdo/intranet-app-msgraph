@@ -13,3 +13,7 @@ if (! app()->runningUnitTests()) {
     Schedule::job(new CheckAzureAppSecretsExpiry)
         ->dailyAt('06:00');
 }
+
+Schedule::command('onenote:sync-lightrag-status')
+    ->everyMinute()
+    ->withoutOverlapping();
