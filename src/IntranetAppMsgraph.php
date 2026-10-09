@@ -75,6 +75,25 @@ class IntranetAppMsgraph implements IntranetAppInterface, ProvidesDashboardWidge
                 subtitle: self::app_name(),
                 sort: 100,
             ),
+            new SearchActionDefinition(
+                key: 'msgraph.onenote-rag',
+                title: 'OneNote-RAG',
+                keywords: [
+                    'lightrag',
+                    'rag',
+                    'onenote',
+                    'onenote rag',
+                    'onenote-rag',
+                    'light rag',
+                ],
+                routeName: 'apps.msgraph.onenote-rag.index',
+                appIdentifier: self::identifier(),
+                appName: self::app_name(),
+                icon: 'book-open',
+                permission: 'manage-app-msgraph',
+                subtitle: self::app_name(),
+                sort: 110,
+            ),
         ];
     }
 }
