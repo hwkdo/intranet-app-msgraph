@@ -176,11 +176,18 @@ $registerSubscription = function (int $mappingId, bool $force = false) {
         </flux:tab.panel>
 
         <flux:tab.panel name="einstellungen">
-            <div style="min-height: 400px;">
+            <div class="min-h-[400px] space-y-4">
+                @livewire('intranet-app-base::document-parse-settings', [
+                    'appIdentifier' => 'msgraph',
+                    'settingsModelClass' => \Hwkdo\IntranetAppMsgraph\Models\IntranetAppMsgraphSettings::class,
+                    'appSettingsClass' => \Hwkdo\IntranetAppMsgraph\Data\AppSettings::class,
+                ])
+
                 @livewire('intranet-app-base::admin-settings', [
                     'appIdentifier' => 'msgraph',
                     'settingsModelClass' => '\Hwkdo\IntranetAppMsgraph\Models\IntranetAppMsgraphSettings',
-                    'appSettingsClass' => '\Hwkdo\IntranetAppMsgraph\Data\AppSettings'
+                    'appSettingsClass' => '\Hwkdo\IntranetAppMsgraph\Data\AppSettings',
+                    'excludedKeys' => ['documentParseEngineOverride', 'documentParseTierOverride'],
                 ])
             </div>
         </flux:tab.panel>

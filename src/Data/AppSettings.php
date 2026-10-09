@@ -2,11 +2,16 @@
 
 namespace Hwkdo\IntranetAppMsgraph\Data;
 
+use Hwkdo\IntranetAppBase\Contracts\HasDocumentParseSettings;
 use Hwkdo\IntranetAppBase\Data\Attributes\Description;
 use Hwkdo\IntranetAppBase\Data\BaseAppSettings;
+use Hwkdo\IntranetAppBase\Enums\DocumentParseEngine;
+use Hwkdo\IntranetAppBase\Traits\HasDocumentParseSettingsFields;
 
-class AppSettings extends BaseAppSettings
+class AppSettings extends BaseAppSettings implements HasDocumentParseSettings
 {
+    use HasDocumentParseSettingsFields;
+
     public function __construct(
         #[Description('Aktiviert die Beispiel-Funktionalität')]
         public bool $enableExampleFeature = true,
@@ -25,5 +30,11 @@ class AppSettings extends BaseAppSettings
 
         #[Description('E-Mail-Adresse(n) für Azure-App-Secret-Ablaufwarnungen (kommagetrennt)')]
         public string $secretExpiryNotificationEmail = '',
+
+        #[Description('Document-Parsing-Motor überschreiben (leer = Intranet-Base-Default)')]
+        public ?DocumentParseEngine $documentParseEngineOverride = null,
+
+        #[Description('LlamaParse-Tier überschreiben (leer = Intranet-Base-Default)')]
+        public ?string $documentParseTierOverride = null,
     ) {}
 }

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use Hwkdo\IntranetAppBase\Contracts\IntranetAiGatewayInterface;
 use Hwkdo\IntranetAppMsgraph\Enums\OnenoteRagStatus;
 use Hwkdo\IntranetAppMsgraph\Events\OnenotePageStatusChanged;
 use Hwkdo\IntranetAppMsgraph\Jobs\QueueOnenotePagesForLightRag;
@@ -11,8 +12,8 @@ use Hwkdo\IntranetAppMsgraph\Jobs\UploadOnenotePageToLightRag;
 use Hwkdo\IntranetAppMsgraph\Livewire\OneNoteRag;
 use Hwkdo\IntranetAppMsgraph\Models\OnenoteRagPage;
 use Hwkdo\IntranetAppMsgraph\Services\LightRagOnenoteClient;
-use Hwkdo\IntranetAppMsgraph\Services\OnenotePageUploadQueue;
 use Hwkdo\IntranetAppMsgraph\Services\OnenoteDelegatedTokenService;
+use Hwkdo\IntranetAppMsgraph\Services\OnenotePageUploadQueue;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphOneNoteServiceInterface;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphUserServiceInterface;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -129,9 +130,21 @@ it('lädt den intranet benutzer aus der datenbank und nicht aus ldap', function 
         )
         ->andReturn('<p>Protokoll</p>');
 
+    config([
+        'llama-parse-laravel.api_key' => 'llama-key',
+        'llama-parse-laravel.base_url' => 'https://llama-parse.example',
+        'llama-parse-laravel.poll_interval_ms' => 0,
+        'llama-parse-laravel.tier' => 'cost_effective',
+    ]);
+
     Http::fake([
         'https://lightrag-onenote.example/documents/text' => Http::response([
             'track_id' => 'insert_1',
+        ]),
+        'https://llama-parse.example/api/v2/parse/upload' => Http::response(['id' => 'job-note', 'status' => 'PENDING']),
+        'https://llama-parse.example/api/v2/parse/job-note*' => Http::response([
+            'job' => ['status' => 'COMPLETED'],
+            'markdown_full' => 'Protokoll',
         ]),
     ]);
     Event::fake([OnenotePageStatusChanged::class]);
@@ -150,7 +163,7 @@ it('lädt den intranet benutzer aus der datenbank und nicht aus ldap', function 
         contentUrl: 'https://graph.microsoft.com/v1.0/users/owner/onenote/pages/page-1/content',
         lightragInstance: 'team-meetings',
     );
-    $job->handle($oneNote, app(LightRagOnenoteClient::class));
+    $job->handle($oneNote, app(LightRagOnenoteClient::class), app(IntranetAiGatewayInterface::class));
 
     $page = OnenoteRagPage::query()->where('page_id', 'page-1')->first();
 

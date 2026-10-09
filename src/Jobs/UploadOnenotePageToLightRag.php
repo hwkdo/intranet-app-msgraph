@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Hwkdo\IntranetAppMsgraph\Jobs;
 
+use App\Models\User;
+use Hwkdo\IntranetAppBase\Contracts\IntranetAiGatewayInterface;
 use Hwkdo\IntranetAppMsgraph\Enums\OnenoteRagStatus;
 use Hwkdo\IntranetAppMsgraph\Exceptions\LightRagSourceConflictException;
 use Hwkdo\IntranetAppMsgraph\Models\OnenoteRagPage;
 use Hwkdo\IntranetAppMsgraph\Services\LightRagOnenoteClient;
-use Hwkdo\IntranetAppMsgraph\Support\OnenoteHtmlText;
 use Hwkdo\IntranetAppMsgraph\Support\OnenotePageStatusPublisher;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphOneNoteServiceInterface;
 use Hwkdo\MsGraphLaravel\Support\GraphExceptionMessage;
@@ -40,6 +41,7 @@ class UploadOnenotePageToLightRag implements ShouldQueue
     public function handle(
         MsGraphOneNoteServiceInterface $oneNote,
         LightRagOnenoteClient $lightRag,
+        IntranetAiGatewayInterface $gateway,
     ): void {
         $record = OnenoteRagPage::query()->updateOrCreate(
             ['page_id' => $this->pageId],
@@ -66,7 +68,7 @@ class UploadOnenotePageToLightRag implements ShouldQueue
                 throw new \RuntimeException('Die OneNote-Seite enthält keinen Text.');
             }
 
-            $text = OnenoteHtmlText::toPlainText($html, $this->notebookName, $this->sectionName, $this->pageTitle);
+            $text = $this->parsedPage($gateway, $html);
             $fileSource = 'onenote:'.$this->pageId;
 
             try {
@@ -95,13 +97,35 @@ class UploadOnenotePageToLightRag implements ShouldQueue
         }
     }
 
+    private function parsedPage(IntranetAiGatewayInterface $gateway, string $html): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'onenote-rag-');
+        if ($path === false) {
+            throw new \RuntimeException('Temporäre OneNote-Datei konnte nicht angelegt werden.');
+        }
+
+        $htmlPath = $path.'.html';
+        rename($path, $htmlPath);
+
+        try {
+            file_put_contents($htmlPath, $html);
+            $parsed = $gateway->parseAppDocument($htmlPath, 'msgraph');
+        } finally {
+            if (is_file($htmlPath)) {
+                @unlink($htmlPath);
+            }
+        }
+
+        return trim("Notizbuch: {$this->notebookName}\nAbschnitt: {$this->sectionName}\nSeite: {$this->pageTitle}\n\n".$parsed);
+    }
+
     private function intranetUser(): Authenticatable
     {
         $userClass = config('auth.providers.users.database.model')
             ?? config('auth.providers.users.model');
 
         if (! is_string($userClass) || ! class_exists($userClass) || ! is_subclass_of($userClass, Model::class)) {
-            $userClass = \App\Models\User::class;
+            $userClass = User::class;
         }
 
         $user = $userClass::query()->findOrFail($this->actorId);
