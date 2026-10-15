@@ -7,7 +7,6 @@ use Hwkdo\IntranetAppMsgraph\Livewire\OneNoteRag;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
-
 Route::middleware(['web', 'auth', 'can:see-app-msgraph'])->group(function () {
     Volt::route('apps/msgraph', 'apps.msgraph.index')->name('apps.msgraph.index');
 
@@ -19,7 +18,6 @@ Route::middleware(['web', 'auth', 'can:see-app-msgraph'])->group(function () {
     Route::get('apps/msgraph/auslandszugriff', Auslandszugriff::class)->name('apps.msgraph.auslandszugriff.index');
 });
 
-
 Route::middleware(['web', 'auth', 'can:manage-app-msgraph'])->group(function () {
     Volt::route('apps/msgraph/admin', 'apps.msgraph.admin.index')->name('apps.msgraph.admin.index');
 
@@ -30,9 +28,3 @@ Route::middleware(['web', 'auth', 'can:manage-app-msgraph'])->group(function () 
     Route::get('apps/msgraph/onenote-rag/connect', [OnenoteAccountConnectController::class, 'redirect'])
         ->name('apps.msgraph.onenote-rag.connect');
 });
-
-Route::middleware(['web', 'auth', 'can:manage-app-msgraph'])->group(function (): void {
-    Volt::route('apps/msgraph/admin/background-activities', 'apps.msgraph.admin.background-activities')
-        ->name('apps.msgraph.admin.background-activities');
-});
-

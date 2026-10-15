@@ -5,9 +5,17 @@ use Hwkdo\MsGraphLaravel\Models\GraphWebhookJobMapping;
 use Hwkdo\MsGraphLaravel\Models\Subscription;
 use Hwkdo\MsGraphLaravel\Services\SubscriptionService;
 use Illuminate\Support\Facades\Log;
-use function Livewire\Volt\{computed, state, title};
+use function Livewire\Volt\{computed, mount, state, title};
 
 title('Msgraph - Admin');
+
+mount(function (): void {
+    $tab = request()->query('tab');
+
+    if ($tab === 'hintergrund') {
+        $this->activeTab = 'hintergrund';
+    }
+});
 
 state([
     'activeTab' => 'einstellungen',
@@ -159,12 +167,13 @@ $registerSubscription = function (int $mappingId, bool $force = false) {
 <div>
 <x-intranet-app-msgraph::msgraph-layout heading="Msgraph App" subheading="Admin">
     <flux:tab.group>
-        <flux:tabs wire:model="activeTab">
+        <flux:tabs wire:model.live="activeTab">
             <flux:tab name="hintergrundbild" icon="photo">Hintergrundbild</flux:tab>
             <flux:tab name="einstellungen" icon="cog-6-tooth">Einstellungen</flux:tab>
             <flux:tab name="statistiken" icon="chart-bar">Statistiken</flux:tab>
             <flux:tab name="subscriptions" icon="bell">Registered Subscriptions</flux:tab>
             <flux:tab name="mappings" icon="link">Mappings</flux:tab>
+            <flux:tab name="hintergrund" icon="clock">Hintergrund</flux:tab>
         </flux:tabs>
 
         <flux:tab.panel name="hintergrundbild">
@@ -443,6 +452,13 @@ $registerSubscription = function (int $mappingId, bool $force = false) {
                 </flux:card>
             </div>            
         </flux:tab.panel>
+    <flux:tab.panel name="hintergrund">
+        @if ($activeTab === 'hintergrund')
+            <div class="min-h-[400px]">
+                @livewire('intranet-app-base::background-activities', ['appIdentifier' => 'msgraph'], key('msgraph-admin-hintergrund'))
+            </div>
+        @endif
+    </flux:tab.panel>
     </flux:tab.group>    
 </x-intranet-app-msgraph::msgraph-layout>
 

@@ -17,7 +17,6 @@
         ['label' => 'App-Info', 'href' => route('apps.msgraph.info'), 'icon' => 'information-circle', 'description' => 'Installierte Version und Release-Historie', 'buttonText' => 'App-Info anzeigen'],
         auth()->user()?->can('manage-app-msgraph') ? ['label' => 'Azure Apps', 'href' => route('apps.msgraph.azure-apps.index'), 'icon' => 'key', 'description' => 'Azure App-Registrierungen und Secret-Ablauf', 'buttonText' => 'Azure Apps öffnen'] : null,
         auth()->user()?->can('manage-app-msgraph') ? ['label' => 'OneNote-RAG', 'href' => route('apps.msgraph.onenote-rag.index'), 'icon' => 'book-open', 'description' => 'OneNote-Seiten nach LightRAG übernehmen', 'buttonText' => 'OneNote-RAG öffnen'] : null,
-        ['label' => 'Hintergrund', 'href' => route('apps.msgraph.admin.background-activities'), 'icon' => 'clock', 'description' => 'Geplante Tasks, Jobs und Versand', 'buttonText' => 'Hintergrund öffnen', 'permission' => 'manage-app-msgraph'],
         ['label' => 'Admin', 'href' => route('apps.msgraph.admin.index'), 'icon' => 'shield-check', 'description' => 'Administrationsbereich verwalten', 'buttonText' => 'Admin öffnen', 'permission' => 'manage-app-msgraph'],
     ]));
 
