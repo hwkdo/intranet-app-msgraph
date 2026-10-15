@@ -4,12 +4,13 @@ namespace Hwkdo\IntranetAppMsgraph\Mail;
 
 use Carbon\CarbonInterface;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class AzureAppSecretExpiryWarning extends Mailable
+class AzureAppSecretExpiryWarning extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

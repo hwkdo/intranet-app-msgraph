@@ -30,3 +30,9 @@ Route::middleware(['web', 'auth', 'can:manage-app-msgraph'])->group(function () 
     Route::get('apps/msgraph/onenote-rag/connect', [OnenoteAccountConnectController::class, 'redirect'])
         ->name('apps.msgraph.onenote-rag.connect');
 });
+
+Route::middleware(['web', 'auth', 'can:manage-app-msgraph'])->group(function (): void {
+    Volt::route('apps/msgraph/admin/background-activities', 'apps.msgraph.admin.background-activities')
+        ->name('apps.msgraph.admin.background-activities');
+});
+

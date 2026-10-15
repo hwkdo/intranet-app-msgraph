@@ -1,19 +1,5 @@
 <?php
 
-use Hwkdo\IntranetAppMsgraph\Jobs\CheckAzureAppSecretsExpiry;
-use Hwkdo\IntranetAppMsgraph\Jobs\ProcessAuslandseinsatzMemberships;
-use Illuminate\Support\Facades\Schedule;
+declare(strict_types=1);
 
-// In Tests überspringe das Laden der Settings
-if (! app()->runningUnitTests()) {
-
-    Schedule::job(new ProcessAuslandseinsatzMemberships)
-        ->everyFourHours();
-
-    Schedule::job(new CheckAzureAppSecretsExpiry)
-        ->dailyAt('06:00');
-}
-
-Schedule::command('onenote:sync-lightrag-status')
-    ->everyMinute()
-    ->withoutOverlapping();
+// Schedules werden über ProvidesBackgroundActivitiesInterface registriert.

@@ -3,13 +3,12 @@
 namespace Hwkdo\IntranetAppMsgraph;
 
 use Hwkdo\IntranetAppMsgraph\Commands\SyncOnenoteLightRagStatusCommand;
-use Hwkdo\IntranetAppMsgraph\Services\OnenoteDelegatedTokenService;
-use Hwkdo\MsGraphLaravel\Interfaces\OnenoteDelegatedTokenInterface;
 use Hwkdo\IntranetAppMsgraph\Livewire\Auslandszugriff;
 use Hwkdo\IntranetAppMsgraph\Livewire\AzureApps;
-use Hwkdo\IntranetAppMsgraph\Livewire\OneNoteRag;
 use Hwkdo\IntranetAppMsgraph\Livewire\DashboardWidgets\AzureAppSecretsExpiring;
-use Illuminate\Console\Scheduling\Schedule;
+use Hwkdo\IntranetAppMsgraph\Livewire\OneNoteRag;
+use Hwkdo\IntranetAppMsgraph\Services\OnenoteDelegatedTokenService;
+use Hwkdo\MsGraphLaravel\Interfaces\OnenoteDelegatedTokenInterface;
 use Livewire\Livewire;
 use Livewire\Volt\Volt;
 use Spatie\LaravelPackageTools\Package;
@@ -45,8 +44,5 @@ class IntranetAppMsgraphServiceProvider extends PackageServiceProvider
         });
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
         $this->loadRoutesFrom(__DIR__.'/../routes/channels.php');
-        $this->app->resolving(Schedule::class, function (): void {
-            require __DIR__.'/../routes/console.php';
-        });
     }
 }
