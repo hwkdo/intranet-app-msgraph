@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hwkdo\IntranetAppMsgraph\Jobs;
 
 use App\Models\User;
+use Hwkdo\IntranetAppBase\Contracts\DocumentParseConfigResolverInterface;
 use Hwkdo\IntranetAppBase\Contracts\IntranetAiGatewayInterface;
 use Hwkdo\IntranetAppMsgraph\Enums\OnenoteRagStatus;
 use Hwkdo\IntranetAppMsgraph\Exceptions\LightRagSourceConflictException;
@@ -99,6 +100,27 @@ class UploadOnenotePageToLightRag implements ShouldQueue
 
     private function parsedPage(IntranetAiGatewayInterface $gateway, string $html): string
     {
+        $parsed = $this->preparePageText($gateway, $html);
+
+        return trim("Notizbuch: {$this->notebookName}\nAbschnitt: {$this->sectionName}\nSeite: {$this->pageTitle}\n\n".$parsed);
+    }
+
+    /**
+     * OneNote liefert HTML. Vision/pdftotext/HWK Admin brauchen PDF/Bilder —
+     * nur LlamaParse darf die Seite noch einmal aufbereiten.
+     */
+    private function preparePageText(IntranetAiGatewayInterface $gateway, string $html): string
+    {
+        $engine = app(DocumentParseConfigResolverInterface::class)->resolve('msgraph')->engine;
+        if (! $engine->acceptsTextPayload()) {
+            $text = trim(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            if ($text === '') {
+                throw new \RuntimeException('Die OneNote-Seite enthält keinen Text.');
+            }
+
+            return $text;
+        }
+
         $path = tempnam(sys_get_temp_dir(), 'onenote-rag-');
         if ($path === false) {
             throw new \RuntimeException('Temporäre OneNote-Datei konnte nicht angelegt werden.');
@@ -109,14 +131,13 @@ class UploadOnenotePageToLightRag implements ShouldQueue
 
         try {
             file_put_contents($htmlPath, $html);
-            $parsed = $gateway->parseAppDocument($htmlPath, 'msgraph');
+
+            return $gateway->parseAppDocument($htmlPath, 'msgraph');
         } finally {
             if (is_file($htmlPath)) {
                 @unlink($htmlPath);
             }
         }
-
-        return trim("Notizbuch: {$this->notebookName}\nAbschnitt: {$this->sectionName}\nSeite: {$this->pageTitle}\n\n".$parsed);
     }
 
     private function intranetUser(): Authenticatable
