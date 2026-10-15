@@ -10,6 +10,9 @@ use Hwkdo\IntranetAppBase\Enums\BackgroundActivityCadence;
 use Hwkdo\IntranetAppMsgraph\IntranetAppMsgraph;
 use Hwkdo\IntranetAppMsgraph\Jobs\CheckAzureAppSecretsExpiry;
 use Hwkdo\IntranetAppMsgraph\Jobs\ProcessAuslandseinsatzMemberships;
+use Hwkdo\IntranetAppMsgraph\Jobs\QueueOnenotePagesForLightRag;
+use Hwkdo\IntranetAppMsgraph\Jobs\SyncOnenoteLightRagTrack;
+use Hwkdo\IntranetAppMsgraph\Jobs\UploadOnenotePageToLightRag;
 use Hwkdo\IntranetAppMsgraph\Mail\AzureAppSecretExpiryWarning;
 
 final class MsgraphBackgroundActivities
@@ -70,6 +73,9 @@ final class MsgraphBackgroundActivities
                 mailable: AzureAppSecretExpiryWarning::class,
                 sort: 40,
             ),
+            BackgroundActivityDefinition::queued(key: 'msgraph.onenote-lightrag-upload', label: 'OneNote-Seite an LightRAG', appIdentifier: $id, appName: $name, job: UploadOnenotePageToLightRag::class, description: 'Überträgt eine OneNote-Seite an LightRAG.', sort: 50),
+            BackgroundActivityDefinition::queued(key: 'msgraph.onenote-lightrag-track', label: 'OneNote LightRAG-Track', appIdentifier: $id, appName: $name, job: SyncOnenoteLightRagTrack::class, description: 'Aktualisiert den LightRAG-Track einer OneNote-Seite.', sort: 60),
+            BackgroundActivityDefinition::queued(key: 'msgraph.onenote-lightrag-queue', label: 'OneNote-Seiten einreihen', appIdentifier: $id, appName: $name, job: QueueOnenotePagesForLightRag::class, description: 'Stellt OneNote-Seiten für den LightRAG-Upload in die Queue.', sort: 70),
         ];
     }
 }
