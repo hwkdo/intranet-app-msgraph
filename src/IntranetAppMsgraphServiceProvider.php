@@ -2,6 +2,7 @@
 
 namespace Hwkdo\IntranetAppMsgraph;
 
+use Hwkdo\IntranetAppMsgraph\Commands\SyncOnenoteLightRagContentCommand;
 use Hwkdo\IntranetAppMsgraph\Commands\SyncOnenoteLightRagStatusCommand;
 use Hwkdo\IntranetAppMsgraph\Livewire\Auslandszugriff;
 use Hwkdo\IntranetAppMsgraph\Livewire\AzureApps;
@@ -28,6 +29,7 @@ class IntranetAppMsgraphServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasViews()
             ->hasCommand(SyncOnenoteLightRagStatusCommand::class)
+            ->hasCommand(SyncOnenoteLightRagContentCommand::class)
             ->discoversMigrations();
     }
 

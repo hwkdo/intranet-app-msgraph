@@ -70,6 +70,7 @@ class QueueOnenotePagesForLightRag implements ShouldQueue
                     pageTitle: $page['title'],
                     contentUrl: $page['contentUrl'],
                     lightragInstance: $this->lightragInstance,
+                    sourceModifiedAt: is_string($page['lastModifiedAt'] ?? null) ? $page['lastModifiedAt'] : null,
                 );
             }
         }

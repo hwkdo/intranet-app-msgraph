@@ -2,18 +2,20 @@
 
 namespace Hwkdo\IntranetAppMsgraph;
 
+use Hwkdo\IntranetAppBase\Data\NotificationTypeDefinition;
 use Hwkdo\IntranetAppBase\Interfaces\ProvidesBackgroundActivitiesInterface;
 use Hwkdo\IntranetAppMsgraph\Background\MsgraphBackgroundActivities;
 use Hwkdo\IntranetAppBase\Data\SearchActionDefinition;
 use Hwkdo\IntranetAppBase\Interfaces\IntranetAppInterface;
 use Hwkdo\IntranetAppBase\Interfaces\ProvidesDashboardWidgetsInterface;
+use Hwkdo\IntranetAppBase\Interfaces\ProvidesNotificationsInterface;
 use Hwkdo\IntranetAppBase\Interfaces\ProvidesSearchActionsInterface;
 use Hwkdo\IntranetAppMsgraph\Dashboard\MsgraphDashboardWidgetProvider;
 use Hwkdo\IntranetAppMsgraph\Data\AppSettings;
 use Hwkdo\IntranetAppMsgraph\Data\UserSettings;
 use Illuminate\Support\Collection;
 
-class IntranetAppMsgraph implements IntranetAppInterface, ProvidesBackgroundActivitiesInterface, ProvidesDashboardWidgetsInterface, ProvidesSearchActionsInterface
+class IntranetAppMsgraph implements IntranetAppInterface, ProvidesBackgroundActivitiesInterface, ProvidesDashboardWidgetsInterface, ProvidesNotificationsInterface, ProvidesSearchActionsInterface
 {
     public static function app_name(): string
     {
@@ -95,6 +97,20 @@ class IntranetAppMsgraph implements IntranetAppInterface, ProvidesBackgroundActi
                 permission: 'manage-app-msgraph',
                 subtitle: self::app_name(),
                 sort: 110,
+            ),
+        ];
+    }
+
+    public static function notificationTypes(): array
+    {
+        return [
+            new NotificationTypeDefinition(
+                key: 'msgraph.onenote_rag_sync_failed',
+                label: 'OneNote-RAG Sync fehlgeschlagen',
+                appIdentifier: self::identifier(),
+                appName: self::app_name(),
+                description: 'Meldung an Benutzer mit der Berechtigung manage-app-msgraph, wenn der OneNote-Abgleich ausfällt.',
+                defaultChannels: ['inbox', 'mail'],
             ),
         ];
     }

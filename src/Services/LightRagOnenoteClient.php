@@ -44,6 +44,21 @@ class LightRagOnenoteClient
             ->throw();
     }
 
+    public function deleteDocument(string $instance, string $docId): void
+    {
+        $response = $this->request()->post($this->baseUrl($instance).'/documents/delete_document', [
+            'doc_ids' => [$docId],
+            'delete_file' => true,
+            'delete_llm_cache' => true,
+        ]);
+
+        if ($response->status() === 404) {
+            return;
+        }
+
+        $response->throw();
+    }
+
     /**
      * @return array{status: string, doc_id: ?string, error_message: ?string}
      */

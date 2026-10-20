@@ -102,3 +102,26 @@ it('startet fehlgeschlagene dokumente neu', function () {
             && $request->method() === 'POST';
     });
 });
+
+it('löscht ein dokument in der gewählten instanz', function () {
+    config([
+        'intranet-app-msgraph.lightrag.api_key' => 'test-key',
+        'intranet-app-msgraph.lightrag.instances.playbooks' => [
+            'label' => 'Playbooks',
+            'url' => 'https://lightrag-playbooks.example',
+        ],
+    ]);
+
+    Http::fake([
+        'https://lightrag-playbooks.example/documents/delete_document' => Http::response(['status' => 'deletion_started']),
+    ]);
+
+    app(LightRagOnenoteClient::class)->deleteDocument('playbooks', 'doc-gone');
+
+    Http::assertSent(function ($request): bool {
+        return $request->url() === 'https://lightrag-playbooks.example/documents/delete_document'
+            && $request['doc_ids'] === ['doc-gone']
+            && $request['delete_file'] === true
+            && $request['delete_llm_cache'] === true;
+    });
+});

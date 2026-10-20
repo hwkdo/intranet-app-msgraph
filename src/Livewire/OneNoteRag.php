@@ -220,6 +220,7 @@ class OneNoteRag extends Component
             pageTitle: $page['title'],
             contentUrl: $contentUrl,
             lightragInstance: $this->lightragInstance,
+            sourceModifiedAt: is_string($page['lastModifiedAt'] ?? null) ? $page['lastModifiedAt'] : null,
         );
 
         if ($record === null) {
@@ -419,6 +420,7 @@ class OneNoteRag extends Component
                 'id' => $page['id'],
                 'title' => $page['title'],
                 'contentUrl' => $page['contentUrl'],
+                'lastModifiedAt' => is_string($page['lastModifiedAt'] ?? null) ? $page['lastModifiedAt'] : null,
                 'status' => $status?->value ?? '',
                 'statusLabel' => $this->statusLabel($status),
                 'error' => $record?->error_message,

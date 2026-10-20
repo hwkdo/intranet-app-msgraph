@@ -37,6 +37,8 @@ class UploadOnenotePageToLightRag implements ShouldQueue
         public string $pageTitle,
         public string $contentUrl,
         public string $lightragInstance,
+        public ?string $sourceModifiedAt = null,
+        public bool $refresh = false,
     ) {}
 
     public function handle(
@@ -70,7 +72,24 @@ class UploadOnenotePageToLightRag implements ShouldQueue
             }
 
             $text = $this->parsedPage($gateway, $html);
+            $hash = hash('sha256', $text);
             $fileSource = 'onenote:'.$this->pageId;
+
+            if ($this->refresh && is_string($record->content_hash) && hash_equals($record->content_hash, $hash)) {
+                $record->update([
+                    'status' => OnenoteRagStatus::Processed,
+                    'source_modified_at' => $this->sourceModifiedAt,
+                    'error_message' => null,
+                ]);
+                OnenotePageStatusPublisher::publish($record->refresh());
+
+                return;
+            }
+
+            if ($this->refresh && is_string($record->lightrag_doc_id) && $record->lightrag_doc_id !== '') {
+                $lightRag->deleteDocument($this->lightragInstance, $record->lightrag_doc_id);
+                $record->update(['lightrag_doc_id' => null]);
+            }
 
             try {
                 $trackId = $lightRag->insertText($this->lightragInstance, $text, $fileSource)['track_id'];
@@ -84,6 +103,8 @@ class UploadOnenotePageToLightRag implements ShouldQueue
 
             $record->update([
                 'track_id' => $trackId,
+                'content_hash' => $hash,
+                'source_modified_at' => $this->sourceModifiedAt ?? $record->source_modified_at,
                 'status' => OnenoteRagStatus::Processing,
                 'error_message' => null,
             ]);

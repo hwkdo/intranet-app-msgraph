@@ -18,6 +18,7 @@ class OnenoteRagPage extends Model
         return [
             'status' => OnenoteRagStatus::class,
             'indexed_at' => 'datetime',
+            'source_modified_at' => 'datetime',
         ];
     }
 }

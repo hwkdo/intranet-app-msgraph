@@ -23,13 +23,19 @@ class OnenotePageUploadQueue
         string $pageTitle,
         string $contentUrl,
         string $lightragInstance,
+        ?string $sourceModifiedAt = null,
+        bool $refresh = false,
     ): ?OnenoteRagPage {
         if ($contentUrl === '') {
             return null;
         }
 
         $existing = OnenoteRagPage::query()->where('page_id', $pageId)->first();
-        if ($existing !== null && in_array($existing->status, [
+        if ($existing !== null && $refresh && $existing->status === OnenoteRagStatus::Processing) {
+            return null;
+        }
+
+        if ($existing !== null && ! $refresh && in_array($existing->status, [
             OnenoteRagStatus::Pending,
             OnenoteRagStatus::Processing,
             OnenoteRagStatus::Processed,
@@ -66,6 +72,8 @@ class OnenotePageUploadQueue
             pageTitle: $pageTitle,
             contentUrl: $contentUrl,
             lightragInstance: $lightragInstance,
+            sourceModifiedAt: $sourceModifiedAt,
+            refresh: $refresh,
         );
 
         return $record;
