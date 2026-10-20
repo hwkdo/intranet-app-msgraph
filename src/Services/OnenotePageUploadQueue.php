@@ -12,7 +12,7 @@ use Hwkdo\IntranetAppMsgraph\Support\OnenotePageStatusPublisher;
 class OnenotePageUploadQueue
 {
     public function queue(
-        int $actorId,
+        ?int $actorId,
         string $ownerType,
         string $ownerId,
         string $notebookId,

@@ -13,8 +13,10 @@ use Hwkdo\IntranetAppMsgraph\Models\OnenoteRagPage;
 use Hwkdo\IntranetAppMsgraph\Services\LightRagOnenoteClient;
 use Hwkdo\IntranetAppMsgraph\Support\OnenotePageStatusPublisher;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphOneNoteServiceInterface;
+use Hwkdo\MsGraphLaravel\Interfaces\OnenoteDelegatedTokenInterface;
 use Hwkdo\MsGraphLaravel\Support\GraphExceptionMessage;
 use Hwkdo\MsGraphLaravel\Support\OnenoteGraphUrl;
+use Illuminate\Auth\GenericUser;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
@@ -26,7 +28,7 @@ class UploadOnenotePageToLightRag implements ShouldQueue
     use Queueable;
 
     public function __construct(
-        public int $actorId,
+        public ?int $actorId,
         public string $ownerType,
         public string $ownerId,
         public string $notebookId,
@@ -163,6 +165,18 @@ class UploadOnenotePageToLightRag implements ShouldQueue
 
     private function intranetUser(): Authenticatable
     {
+        if ($this->actorId === null) {
+            $upn = app(OnenoteDelegatedTokenInterface::class)->connectedUpn();
+            if (! is_string($upn) || $upn === '') {
+                throw new \InvalidArgumentException('Für OneNote ist noch kein Microsoft-Konto verbunden.');
+            }
+
+            return new GenericUser([
+                'id' => $upn,
+                'email' => $upn,
+            ]);
+        }
+
         $userClass = config('auth.providers.users.database.model')
             ?? config('auth.providers.users.model');
 

@@ -10,9 +10,11 @@ use Hwkdo\IntranetAppMsgraph\Notifications\OnenoteRagSyncFailedNotification;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphOneNoteServiceInterface;
 use Hwkdo\MsGraphLaravel\Interfaces\OnenoteDelegatedTokenInterface;
 use Hwkdo\MsGraphLaravel\Support\GraphExceptionMessage;
+use Illuminate\Auth\GenericUser;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 use Throwable;
 
 class OnenoteLightRagReconciler
@@ -39,9 +41,10 @@ class OnenoteLightRagReconciler
             return false;
         }
 
-        $actor = $this->actor();
-        if (! $actor instanceof Authenticatable) {
-            $this->notify('Für den Abgleich fehlt ein aktiver Benutzer mit der Berechtigung manage-app-msgraph.');
+        try {
+            $actor = $this->connectedActor();
+        } catch (InvalidArgumentException $exception) {
+            $this->notify($exception->getMessage());
 
             return false;
         }
@@ -119,7 +122,7 @@ class OnenoteLightRagReconciler
                         continue;
                     }
 
-                    $this->refreshIfChanged($actor, $record, $remote, (string) ($section['name'] ?? $record->section_name));
+                    $this->refreshIfChanged($record, $remote, (string) ($section['name'] ?? $record->section_name));
                 }
 
                 foreach ($listed['pages'] as $remote) {
@@ -127,7 +130,7 @@ class OnenoteLightRagReconciler
                         continue;
                     }
 
-                    $this->enqueue($actor, $sample, (string) $sectionId, (string) ($section['name'] ?? ''), $remote, $instance);
+                    $this->enqueue($sample, (string) $sectionId, (string) ($section['name'] ?? ''), $remote, $instance);
                 }
             }
 
@@ -151,7 +154,7 @@ class OnenoteLightRagReconciler
                 }
 
                 foreach ($listed['pages'] as $remote) {
-                    $this->enqueue($actor, $sample, $section['id'], $section['name'], $remote, $instance);
+                    $this->enqueue($sample, $section['id'], $section['name'], $remote, $instance);
                 }
             }
         }
@@ -168,7 +171,7 @@ class OnenoteLightRagReconciler
     /**
      * @param  array{id: string, title: string, contentUrl: string, lastModifiedAt?: ?string}  $remote
      */
-    private function refreshIfChanged(Authenticatable $actor, OnenoteRagPage $record, array $remote, string $sectionName): void
+    private function refreshIfChanged(OnenoteRagPage $record, array $remote, string $sectionName): void
     {
         if ($record->status === OnenoteRagStatus::Processing || $record->status === OnenoteRagStatus::Pending) {
             return;
@@ -194,14 +197,13 @@ class OnenoteLightRagReconciler
             return;
         }
 
-        $this->enqueue($actor, $record, $record->section_id, $sectionName, $remote, $instance, true);
+        $this->enqueue($record, $record->section_id, $sectionName, $remote, $instance, true);
     }
 
     /**
      * @param  array{id: string, title: string, contentUrl: string, lastModifiedAt?: ?string}  $remote
      */
     private function enqueue(
-        Authenticatable $actor,
         OnenoteRagPage $sample,
         string $sectionId,
         string $sectionName,
@@ -210,7 +212,7 @@ class OnenoteLightRagReconciler
         bool $refresh = false,
     ): void {
         $this->queue->queue(
-            actorId: (int) $actor->getAuthIdentifier(),
+            actorId: null,
             ownerType: $sample->owner_type,
             ownerId: $sample->owner_id,
             notebookId: $sample->notebook_id,
@@ -277,22 +279,17 @@ class OnenoteLightRagReconciler
         return 'https://graph.microsoft.com/v1.0/'.$kind.'/'.rawurlencode($page->owner_id).'/onenote/notebooks/'.rawurlencode($page->notebook_id);
     }
 
-    private function actor(): ?Authenticatable
+    private function connectedActor(): Authenticatable
     {
-        $userClass = config('auth.providers.users.database.model')
-            ?? config('auth.providers.users.model');
-
-        if (! is_string($userClass) || ! class_exists($userClass) || ! is_subclass_of($userClass, Model::class)) {
-            return null;
+        $upn = $this->tokens->connectedUpn();
+        if (! is_string($upn) || $upn === '') {
+            throw new InvalidArgumentException('Für OneNote ist noch kein Microsoft-Konto verbunden.');
         }
 
-        $user = $userClass::query()
-            ->permission('manage-app-msgraph')
-            ->where('active', true)
-            ->orderBy('id')
-            ->first();
-
-        return $user instanceof Authenticatable ? $user : null;
+        return new GenericUser([
+            'id' => $upn,
+            'email' => $upn,
+        ]);
     }
 
     private function notify(string $reason): void
