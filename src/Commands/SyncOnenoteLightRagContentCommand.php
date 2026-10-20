@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hwkdo\IntranetAppMsgraph\Commands;
 
+use Hwkdo\IntranetAppBase\Services\BackgroundActivityOutput;
 use Hwkdo\IntranetAppMsgraph\Services\OnenoteLightRagReconciler;
 use Illuminate\Console\Command;
 
@@ -15,14 +16,20 @@ class SyncOnenoteLightRagContentCommand extends Command
 
     public function handle(OnenoteLightRagReconciler $reconciler): int
     {
-        if ($reconciler->run()) {
-            $this->info('OneNote-RAG-Abgleich abgeschlossen.');
+        $report = $reconciler->run();
+        $summary = $report->summary();
+        $outputClass = BackgroundActivityOutput::class;
 
-            return self::SUCCESS;
+        if (class_exists($outputClass)) {
+            app($outputClass)->remember($summary);
         }
 
-        $this->error('OneNote-RAG-Abgleich fehlgeschlagen.');
+        if ($report->successful()) {
+            $this->info($summary);
+        } else {
+            $this->error($summary);
+        }
 
-        return self::FAILURE;
+        return $report->successful() ? self::SUCCESS : self::FAILURE;
     }
 }

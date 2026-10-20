@@ -13,6 +13,7 @@ use Hwkdo\MsGraphLaravel\Support\GraphExceptionMessage;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Throwable;
@@ -26,30 +27,35 @@ class OnenoteLightRagReconciler
         private OnenotePageUploadQueue $queue,
     ) {}
 
-    public function run(): bool
+    public function run(): OnenoteLightRagSyncReport
     {
+        $report = new OnenoteLightRagSyncReport;
         $pages = OnenoteRagPage::query()->orderBy('id')->get();
         if ($pages->isEmpty()) {
-            return true;
+            $report->empty = true;
+
+            return $report;
         }
 
         try {
             $this->tokens->accessToken();
         } catch (Throwable $exception) {
-            $this->notify('Das OneNote-Konto ist nicht nutzbar. '.GraphExceptionMessage::resolve($exception, 'Token ungültig.'));
+            $report->failures[] = 'Das OneNote-Konto ist nicht nutzbar. '.GraphExceptionMessage::resolve($exception, 'Token ungültig.');
+            $this->notify($report->failures[0]);
 
-            return false;
+            return $report;
         }
 
         try {
             $actor = $this->connectedActor();
         } catch (InvalidArgumentException $exception) {
+            $report->failures[] = $exception->getMessage();
             $this->notify($exception->getMessage());
 
-            return false;
+            return $report;
         }
 
-        $failures = [];
+        $report->started = true;
 
         foreach ($pages->groupBy(fn (OnenoteRagPage $page): string => $page->owner_type.'|'.$page->owner_id.'|'.$page->notebook_id) as $notebookPages) {
             $sample = $notebookPages->first();
@@ -59,7 +65,7 @@ class OnenoteLightRagReconciler
 
             $instance = $this->instanceFor($notebookPages);
             if ($instance === null) {
-                $failures[] = 'Notizbuch '.$sample->notebook_name.' hat keine LightRAG-Instanz.';
+                $report->failures[] = 'Notizbuch '.$sample->notebook_name.' hat keine LightRAG-Instanz.';
 
                 continue;
             }
@@ -72,18 +78,19 @@ class OnenoteLightRagReconciler
                 );
             } catch (Throwable $exception) {
                 if ($this->isAuthenticationFailure($exception)) {
-                    $this->notify('Das OneNote-Konto ist nicht nutzbar. '.GraphExceptionMessage::resolve($exception));
+                    $report->failures[] = 'Das OneNote-Konto ist nicht nutzbar. '.GraphExceptionMessage::resolve($exception);
+                    $this->notify($report->failures[array_key_last($report->failures)]);
 
-                    return false;
+                    return $report;
                 }
 
                 if ($this->isMissing($exception)) {
-                    $failures = array_merge($failures, $this->removePages($notebookPages));
+                    $this->removePages($notebookPages, $report);
 
                     continue;
                 }
 
-                $failures[] = $sample->notebook_name.': '.GraphExceptionMessage::resolve($exception, 'Abschnitte konnten nicht gelesen werden.');
+                $report->failures[] = $sample->notebook_name.': '.GraphExceptionMessage::resolve($exception, 'Abschnitte konnten nicht gelesen werden.');
 
                 continue;
             }
@@ -94,7 +101,7 @@ class OnenoteLightRagReconciler
             foreach ($notebookPages->groupBy('section_id') as $sectionId => $sectionPages) {
                 $section = $remoteSections->get($sectionId);
                 if (! is_array($section)) {
-                    $failures = array_merge($failures, $this->removePages($sectionPages));
+                    $this->removePages($sectionPages, $report);
 
                     continue;
                 }
@@ -103,12 +110,13 @@ class OnenoteLightRagReconciler
                     $listed = $this->oneNote->listPages($actor, (string) $section['pagesUrl'], '', $sample->owner_id);
                 } catch (Throwable $exception) {
                     if ($this->isAuthenticationFailure($exception)) {
-                        $this->notify('Das OneNote-Konto ist nicht nutzbar. '.GraphExceptionMessage::resolve($exception));
+                        $report->failures[] = 'Das OneNote-Konto ist nicht nutzbar. '.GraphExceptionMessage::resolve($exception);
+                        $this->notify($report->failures[array_key_last($report->failures)]);
 
-                        return false;
+                        return $report;
                     }
 
-                    $failures[] = ($section['name'] ?? $sectionId).': '.GraphExceptionMessage::resolve($exception, 'Seiten konnten nicht gelesen werden.');
+                    $report->failures[] = ($section['name'] ?? $sectionId).': '.GraphExceptionMessage::resolve($exception, 'Seiten konnten nicht gelesen werden.');
 
                     continue;
                 }
@@ -117,12 +125,12 @@ class OnenoteLightRagReconciler
                 foreach ($sectionPages as $record) {
                     $remote = $remotePages->get($record->page_id);
                     if (! is_array($remote)) {
-                        $failures = array_merge($failures, $this->removePages(collect([$record])));
+                        $this->removePages(collect([$record]), $report);
 
                         continue;
                     }
 
-                    $this->refreshIfChanged($record, $remote, (string) ($section['name'] ?? $record->section_name));
+                    $this->refreshIfChanged($report, $record, $remote, (string) ($section['name'] ?? $record->section_name));
                 }
 
                 foreach ($listed['pages'] as $remote) {
@@ -130,7 +138,7 @@ class OnenoteLightRagReconciler
                         continue;
                     }
 
-                    $this->enqueue($sample, (string) $sectionId, (string) ($section['name'] ?? ''), $remote, $instance);
+                    $this->enqueue($report, $sample, (string) $sectionId, (string) ($section['name'] ?? ''), $remote, $instance);
                 }
             }
 
@@ -143,37 +151,38 @@ class OnenoteLightRagReconciler
                     $listed = $this->oneNote->listPages($actor, $section['pagesUrl'], '', $sample->owner_id);
                 } catch (Throwable $exception) {
                     if ($this->isAuthenticationFailure($exception)) {
-                        $this->notify('Das OneNote-Konto ist nicht nutzbar. '.GraphExceptionMessage::resolve($exception));
+                        $report->failures[] = 'Das OneNote-Konto ist nicht nutzbar. '.GraphExceptionMessage::resolve($exception);
+                        $this->notify($report->failures[array_key_last($report->failures)]);
 
-                        return false;
+                        return $report;
                     }
 
-                    $failures[] = $section['name'].': '.GraphExceptionMessage::resolve($exception, 'Seiten konnten nicht gelesen werden.');
+                    $report->failures[] = $section['name'].': '.GraphExceptionMessage::resolve($exception, 'Seiten konnten nicht gelesen werden.');
 
                     continue;
                 }
 
                 foreach ($listed['pages'] as $remote) {
-                    $this->enqueue($sample, $section['id'], $section['name'], $remote, $instance);
+                    $this->enqueue($report, $sample, $section['id'], $section['name'], $remote, $instance);
                 }
             }
         }
 
-        if ($failures !== []) {
-            $this->notify(implode("\n", array_unique($failures)));
-
-            return false;
+        if ($report->failures !== []) {
+            $this->notify(implode("\n", array_unique($report->failures)));
         }
 
-        return true;
+        return $report;
     }
 
     /**
      * @param  array{id: string, title: string, contentUrl: string, lastModifiedAt?: ?string}  $remote
      */
-    private function refreshIfChanged(OnenoteRagPage $record, array $remote, string $sectionName): void
+    private function refreshIfChanged(OnenoteLightRagSyncReport $report, OnenoteRagPage $record, array $remote, string $sectionName): void
     {
         if ($record->status === OnenoteRagStatus::Processing || $record->status === OnenoteRagStatus::Pending) {
+            $report->skipped++;
+
             return;
         }
 
@@ -184,11 +193,14 @@ class OnenoteLightRagReconciler
 
         if ($record->source_modified_at === null) {
             $record->update(['source_modified_at' => $modified]);
+            $report->baselined++;
 
             return;
         }
 
-        if ($record->source_modified_at->utc()->equalTo(\Illuminate\Support\Carbon::parse($modified)->utc())) {
+        if ($record->source_modified_at->utc()->equalTo(Carbon::parse($modified)->utc())) {
+            $report->unchanged++;
+
             return;
         }
 
@@ -197,13 +209,14 @@ class OnenoteLightRagReconciler
             return;
         }
 
-        $this->enqueue($record, $record->section_id, $sectionName, $remote, $instance, true);
+        $this->enqueue($report, $record, $record->section_id, $sectionName, $remote, $instance, true);
     }
 
     /**
      * @param  array{id: string, title: string, contentUrl: string, lastModifiedAt?: ?string}  $remote
      */
     private function enqueue(
+        OnenoteLightRagSyncReport $report,
         OnenoteRagPage $sample,
         string $sectionId,
         string $sectionName,
@@ -211,7 +224,7 @@ class OnenoteLightRagReconciler
         string $instance,
         bool $refresh = false,
     ): void {
-        $this->queue->queue(
+        $queued = $this->queue->queue(
             actorId: null,
             ownerType: $sample->owner_type,
             ownerId: $sample->owner_id,
@@ -226,16 +239,27 @@ class OnenoteLightRagReconciler
             sourceModifiedAt: is_string($remote['lastModifiedAt'] ?? null) ? $remote['lastModifiedAt'] : null,
             refresh: $refresh,
         );
+
+        if ($queued === null) {
+            $report->skipped++;
+
+            return;
+        }
+
+        if ($refresh) {
+            $report->queuedUpdates++;
+
+            return;
+        }
+
+        $report->queuedNew++;
     }
 
     /**
      * @param  Collection<int, OnenoteRagPage>  $pages
-     * @return list<string>
      */
-    private function removePages(Collection $pages): array
+    private function removePages(Collection $pages, OnenoteLightRagSyncReport $report): void
     {
-        $failures = [];
-
         foreach ($pages as $page) {
             $docId = $page->lightrag_doc_id;
             $instance = $page->lightrag_instance;
@@ -244,12 +268,11 @@ class OnenoteLightRagReconciler
                     $this->lightRag->deleteDocument($instance, $docId);
                 }
                 $page->delete();
+                $report->deleted++;
             } catch (Throwable $exception) {
-                $failures[] = $page->page_title.': '.GraphExceptionMessage::resolve($exception, 'Die Seite konnte nicht aus LightRAG entfernt werden.');
+                $report->failures[] = $page->page_title.': '.GraphExceptionMessage::resolve($exception, 'Die Seite konnte nicht aus LightRAG entfernt werden.');
             }
         }
-
-        return $failures;
     }
 
     /**
