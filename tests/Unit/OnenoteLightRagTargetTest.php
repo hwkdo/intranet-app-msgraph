@@ -9,6 +9,7 @@ beforeEach(function (): void {
         'intranet-app-msgraph.lightrag.instances' => [
             'team-meetings' => ['label' => 'Team-Meetings', 'url' => 'https://team.example'],
             'wiki' => ['label' => 'Wiki', 'url' => 'https://wiki.example'],
+            'playbooks' => ['label' => 'Playbooks', 'url' => 'https://playbooks.example'],
         ],
         'intranet-app-msgraph.lightrag.notebooks' => [
             'nb-team' => 'team-meetings',
@@ -22,4 +23,8 @@ it('ordnet das teammeetings notizbuch der instanz zu', function () {
 
 it('erkennt wiki am notizbuchnamen', function () {
     expect(OnenoteLightRagTarget::forNotebook('nb-wiki', 'Wiki Schulung'))->toBe('wiki');
+});
+
+it('erkennt playbooks am notizbuchnamen', function () {
+    expect(OnenoteLightRagTarget::forNotebook('nb-playbooks', 'Playbooks'))->toBe('playbooks');
 });

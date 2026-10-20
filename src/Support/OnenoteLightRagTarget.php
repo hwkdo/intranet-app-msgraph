@@ -45,6 +45,10 @@ class OnenoteLightRagTarget
             return self::known('wiki') ? 'wiki' : null;
         }
 
+        if (str_contains($name, 'playbook')) {
+            return self::known('playbooks') ? 'playbooks' : null;
+        }
+
         if (str_contains($name, 'teammeeting') || str_contains($name, 'team-meeting')) {
             return self::known('team-meetings') ? 'team-meetings' : null;
         }

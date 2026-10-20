@@ -36,6 +36,10 @@ return [
                 'label' => 'Wiki',
                 'url' => env('LIGHTRAG_WIKI_URL', 'https://lightrag-wiki.swarm.hwkdo.com'),
             ],
+            'playbooks' => [
+                'label' => 'Playbooks',
+                'url' => env('LIGHTRAG_PLAYBOOKS_URL', 'https://lightrag-playbooks.swarm.hwkdo.com'),
+            ],
         ],
         'notebooks' => [
             '1-71394e2d-f51a-4391-b40b-b7f9def13ab1' => 'team-meetings',
