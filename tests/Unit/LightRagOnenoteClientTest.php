@@ -119,7 +119,8 @@ it('löscht ein dokument in der gewählten instanz', function () {
     app(LightRagOnenoteClient::class)->deleteDocument('playbooks', 'doc-gone');
 
     Http::assertSent(function ($request): bool {
-        return $request->url() === 'https://lightrag-playbooks.example/documents/delete_document'
+        return $request->method() === 'DELETE'
+            && $request->url() === 'https://lightrag-playbooks.example/documents/delete_document'
             && $request['doc_ids'] === ['doc-gone']
             && $request['delete_file'] === true
             && $request['delete_llm_cache'] === true;
