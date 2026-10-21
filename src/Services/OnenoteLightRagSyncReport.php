@@ -18,6 +18,10 @@ final class OnenoteLightRagSyncReport
 
     public int $skipped = 0;
 
+    public int $timestampsRepaired = 0;
+
+    public int $graphBatches = 0;
+
     public bool $empty = false;
 
     public bool $started = false;
@@ -54,8 +58,16 @@ final class OnenoteLightRagSyncReport
                 $lines[] = 'Seiten mit gespeichertem Zeitstempel: '.$this->baselined;
             }
 
+            if ($this->timestampsRepaired > 0) {
+                $lines[] = 'Zeitstempel korrigiert: '.$this->timestampsRepaired;
+            }
+
             if ($this->skipped > 0) {
                 $lines[] = 'Seiten übersprungen: '.$this->skipped;
+            }
+
+            if ($this->graphBatches > 0) {
+                $lines[] = 'Graph-Batches: '.$this->graphBatches;
             }
         }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hwkdo\IntranetAppMsgraph\Jobs;
 
+use App\Models\User;
 use Hwkdo\IntranetAppMsgraph\Services\OnenotePageUploadQueue;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphOneNoteServiceInterface;
 use Hwkdo\MsGraphLaravel\Support\OnenoteGraphUrl;
@@ -17,7 +18,7 @@ class QueueOnenotePagesForLightRag implements ShouldQueue
 {
     use Queueable;
 
-    public int $timeout = 600;
+    public int $timeout = 1800;
 
     public int $tries = 3;
 
@@ -41,30 +42,45 @@ class QueueOnenotePagesForLightRag implements ShouldQueue
         OnenotePageUploadQueue $queue,
     ): void {
         $actor = $this->intranetUser();
+        $sections = [];
 
         foreach ($this->sections as $section) {
-            $sectionId = $section['id'];
-            $pagesUrl = OnenoteGraphUrl::sectionPagesUrl('', $sectionId, $section['pagesUrl']);
+            $pagesUrl = OnenoteGraphUrl::sectionPagesUrl('', $section['id'], $section['pagesUrl']);
             if ($pagesUrl === '') {
                 continue;
             }
 
-            try {
-                $loaded = $oneNote->listPages($actor, $pagesUrl, $this->notebookWebUrl, $this->fallbackOwnerId);
-            } catch (Throwable $exception) {
-                report($exception);
+            $sections[$pagesUrl] = $section;
+        }
+
+        if ($sections === []) {
+            return;
+        }
+
+        try {
+            $batched = $oneNote->listPagesBatch($actor, array_keys($sections), $this->fallbackOwnerId);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return;
+        }
+
+        foreach ($sections as $pagesUrl => $section) {
+            $failure = $batched['failures'][$pagesUrl] ?? null;
+            if (is_string($failure)) {
+                report(new \RuntimeException($section['name'].': '.$failure));
 
                 continue;
             }
 
-            foreach ($loaded['pages'] as $page) {
+            foreach ($batched['pages'][$pagesUrl]['pages'] ?? [] as $page) {
                 $queue->queue(
                     actorId: $this->actorId,
                     ownerType: $this->ownerType,
                     ownerId: $this->ownerId,
                     notebookId: $this->notebookId,
                     notebookName: $this->notebookName,
-                    sectionId: $sectionId,
+                    sectionId: $section['id'],
                     sectionName: $section['name'],
                     pageId: $page['id'],
                     pageTitle: $page['title'],
@@ -82,7 +98,7 @@ class QueueOnenotePagesForLightRag implements ShouldQueue
             ?? config('auth.providers.users.model');
 
         if (! is_string($userClass) || ! class_exists($userClass) || ! is_subclass_of($userClass, Model::class)) {
-            $userClass = \App\Models\User::class;
+            $userClass = User::class;
         }
 
         $user = $userClass::query()->findOrFail($this->actorId);

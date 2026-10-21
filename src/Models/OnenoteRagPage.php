@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hwkdo\IntranetAppMsgraph\Models;
 
+use Hwkdo\IntranetAppMsgraph\Casts\OnenoteSourceModifiedAtCast;
 use Hwkdo\IntranetAppMsgraph\Enums\OnenoteRagStatus;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,7 +19,7 @@ class OnenoteRagPage extends Model
         return [
             'status' => OnenoteRagStatus::class,
             'indexed_at' => 'datetime',
-            'source_modified_at' => 'datetime',
+            'source_modified_at' => OnenoteSourceModifiedAtCast::class,
         ];
     }
 }

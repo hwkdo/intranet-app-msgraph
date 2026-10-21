@@ -230,12 +230,18 @@ it('überspringt schon verarbeitete seiten beim sammeln eines abschnitts', funct
     ]);
 
     $oneNote = Mockery::mock(MsGraphOneNoteServiceInterface::class);
-    $oneNote->shouldReceive('listPages')->once()->andReturn([
-        'requestUrl' => 'https://graph.example/sections/sec-1/pages',
+    $oneNote->shouldReceive('listPagesBatch')->once()->andReturn([
         'pages' => [
-            ['id' => 'page-done', 'title' => 'Alt', 'contentUrl' => 'https://graph.example/pages/page-done/content'],
-            ['id' => 'page-new', 'title' => 'Neu', 'contentUrl' => 'https://graph.example/pages/page-new/content'],
+            'https://graph.example/sections/sec-1/pages' => [
+                'requestUrl' => 'https://graph.example/sections/sec-1/pages',
+                'pages' => [
+                    ['id' => 'page-done', 'title' => 'Alt', 'contentUrl' => 'https://graph.example/pages/page-done/content'],
+                    ['id' => 'page-new', 'title' => 'Neu', 'contentUrl' => 'https://graph.example/pages/page-new/content'],
+                ],
+            ],
         ],
+        'failures' => [],
+        'batches' => 1,
     ]);
 
     Bus::fake([UploadOnenotePageToLightRag::class]);

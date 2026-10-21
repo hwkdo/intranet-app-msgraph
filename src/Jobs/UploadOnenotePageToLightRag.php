@@ -15,17 +15,34 @@ use Hwkdo\IntranetAppMsgraph\Support\OnenotePageStatusPublisher;
 use Hwkdo\MsGraphLaravel\Interfaces\MsGraphOneNoteServiceInterface;
 use Hwkdo\MsGraphLaravel\Interfaces\OnenoteDelegatedTokenInterface;
 use Hwkdo\MsGraphLaravel\Support\GraphExceptionMessage;
+use Hwkdo\MsGraphLaravel\Support\OnenoteGraphPacer;
 use Hwkdo\MsGraphLaravel\Support\OnenoteGraphUrl;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Middleware\RateLimited;
 use Throwable;
 
 class UploadOnenotePageToLightRag implements ShouldQueue
 {
     use Queueable;
+
+    public int $tries = 1000;
+
+    public function retryUntil(): \DateTimeInterface
+    {
+        return now()->addHours(6);
+    }
+
+    /**
+     * @return list<object>
+     */
+    public function middleware(): array
+    {
+        return [(new RateLimited('onenote-graph-content'))->releaseAfter(20)];
+    }
 
     public function __construct(
         public ?int $actorId,
@@ -112,6 +129,10 @@ class UploadOnenotePageToLightRag implements ShouldQueue
             ]);
             OnenotePageStatusPublisher::publish($record->refresh());
         } catch (Throwable $exception) {
+            if (app(OnenoteGraphPacer::class)->isRateLimit($exception)) {
+                throw $exception;
+            }
+
             report($exception);
             $record->update([
                 'status' => OnenoteRagStatus::Failed,
@@ -119,6 +140,20 @@ class UploadOnenotePageToLightRag implements ShouldQueue
             ]);
             OnenotePageStatusPublisher::publish($record->refresh());
         }
+    }
+
+    public function failed(Throwable $exception): void
+    {
+        $record = OnenoteRagPage::query()->where('page_id', $this->pageId)->first();
+        if ($record === null || $record->status !== OnenoteRagStatus::Processing) {
+            return;
+        }
+
+        $record->update([
+            'status' => OnenoteRagStatus::Failed,
+            'error_message' => GraphExceptionMessage::resolve($exception, 'Die Seite konnte nicht nach LightRAG übernommen werden.'),
+        ]);
+        OnenotePageStatusPublisher::publish($record);
     }
 
     private function parsedPage(IntranetAiGatewayInterface $gateway, string $html): string

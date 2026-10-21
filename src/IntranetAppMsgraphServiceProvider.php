@@ -10,6 +10,8 @@ use Hwkdo\IntranetAppMsgraph\Livewire\DashboardWidgets\AzureAppSecretsExpiring;
 use Hwkdo\IntranetAppMsgraph\Livewire\OneNoteRag;
 use Hwkdo\IntranetAppMsgraph\Services\OnenoteDelegatedTokenService;
 use Hwkdo\MsGraphLaravel\Interfaces\OnenoteDelegatedTokenInterface;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Livewire;
 use Livewire\Volt\Volt;
 use Spatie\LaravelPackageTools\Package;
@@ -36,6 +38,7 @@ class IntranetAppMsgraphServiceProvider extends PackageServiceProvider
     public function boot(): void
     {
         parent::boot();
+        RateLimiter::for('onenote-graph-content', fn (): Limit => Limit::perMinute(30)->by('onenote-graph-content'));
         $this->app->bind(OnenoteDelegatedTokenInterface::class, OnenoteDelegatedTokenService::class);
         $this->app->booted(function () {
             Volt::mount(__DIR__.'/../resources/views/livewire');
